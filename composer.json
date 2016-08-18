@@ -1,5 +1,5 @@
 {
-    "name": "thinkshout/robo_drupal",
+    "name": "thinkshout/robo-drupal",
     "description": "Robo Tasks for Drupal projects",
     "type": "library",
     "authors": [
