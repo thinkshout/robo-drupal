@@ -160,7 +160,7 @@ EOF';
   function info() {
     phpinfo();
   }
-  
+
   /**
    * Run tests for this site. Currently just Behat.
    *
@@ -231,26 +231,28 @@ EOF';
 
   private function getProjectProperties() {
 
-    $working_dir = getcwd();
+    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => ''];
+
+    $properties['working_dir'] = getcwd();
 
     // Load .env file from the local directory if it exists. Or use the .env.dist
-    $env_file = (file_exists($working_dir . '/.env')) ? '.env' : '.env.dist';
+    $env_file = (file_exists($properties['working_dir'] . '/.env')) ? '.env' : '.env.dist';
 
-    $dotenv = new \Dotenv\Dotenv($working_dir, $env_file);
+    $dotenv = new \Dotenv\Dotenv($properties['working_dir'], $env_file);
     $dotenv->load();
-
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => ''];
 
     array_walk($properties, function(&$var, $key) {
       $env_var = strtoupper('TS_' . $key);
-      $var = getenv($env_var);
+      if ($value = getenv($env_var)) {
+        $var = $value;
+      }
     });
 
     if ($web_root = getenv('TS_WEB_ROOT')) {
-      $properties['web_root'] = __DIR__ . '/' . $web_root;
+      $properties['web_root'] = $properties['working_dir'] . '/' . $web_root;
     }
     else {
-      $properties['web_root'] = __DIR__;
+      $properties['web_root'] = $properties['working_dir'];
     }
 
     $properties['escaped_web_root_path'] = $this->escapeArg($properties['web_root']);
