@@ -154,9 +154,13 @@ EOF';
     return $result;
   }
 
+  /**
+   * Output PHP info.
+   */
   function info() {
     phpinfo();
   }
+  
   /**
    * Run tests for this site. Currently just Behat.
    *
@@ -227,10 +231,12 @@ EOF';
 
   private function getProjectProperties() {
 
-    // Load .env file from the local directory if it exists. Or use the .env.dist
-    $env_file = (file_exists(__DIR__ . '/.env')) ? '.env' : '.env.dist';
+    $working_dir = getcwd();
 
-    $dotenv = new Dotenv\Dotenv(__DIR__, $env_file);
+    // Load .env file from the local directory if it exists. Or use the .env.dist
+    $env_file = (file_exists($working_dir . '/.env')) ? '.env' : '.env.dist';
+
+    $dotenv = new \Dotenv\Dotenv($working_dir, $env_file);
     $dotenv->load();
 
     $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => ''];
