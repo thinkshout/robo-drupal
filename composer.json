@@ -15,5 +15,7 @@
             "ThinkShout\\RoboDrupal\\": "src"
         }
     },
-    "require": {}
+    "require": {
+        "vlucas/phpdotenv": "^2.2"
+    }
 }
