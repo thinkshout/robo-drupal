@@ -2,6 +2,7 @@
     "name": "thinkshout/robo-drupal",
     "description": "Robo Tasks for Drupal projects",
     "type": "library",
+    "license": "GPL-2.0+",
     "authors": [
         {
             "name": "Tauno Hogue",
@@ -16,6 +17,7 @@
         }
     },
     "require": {
-        "vlucas/phpdotenv": "^2.2"
+        "vlucas/phpdotenv": "^2.2",
+        "consolidation/robo": "^1.0.0-rc1"
     }
 }
