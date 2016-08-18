@@ -1,0 +1,19 @@
+{
+    "name": "thinkshout/robo_drupal",
+    "description": "Robo Tasks for Drupal projects",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Tauno Hogue",
+            "email": "tauno@thinkshout.com"
+        }
+    ],
+    "autoload":
+    {
+        "psr-4":
+        {
+            "ThinkShout\\RoboDrupal\\": "src"
+        }
+    },
+    "require": {}
+}
