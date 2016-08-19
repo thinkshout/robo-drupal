@@ -165,35 +165,17 @@ EOF';
   /**
    * Run tests for this site. Currently just Behat.
    *
-   * @option string url The url to test against.
-   * @option string drush_param Drush drive parameters.
    * @option string feature Single feature file to run.
    *   Ex: --feature=features/user.feature.
+   * @option string profile which behat profile to run.
+   *   Ex: --profile default, --profile local, --profile ci
    *
    * @return \Robo\Result
    */
-  function test($opts = ['url' => '', 'drush_param' => '', 'feature' => NULL]) {
-
-    // @TODO don't hard code this.
-    $url = 'http://' . $this->projectProperties['project'] . '.dev';
-
-    if ($opts['url'] != '') {
-      $url = $opts['url'];
-    }
-
-    // Set the drush parameters from the options. This allows for aliases or a
-    // root definition.
-    $root = $this->projectProperties['web_root'];
-    $drush_param = '"root":"' . $root . '"';
-    if (!empty($opts['drush_param'])) {
-      $drush_param = $opts['drush_param'];
-    }
-
-    // Add the specific behat config to our environment.
-    putenv('BEHAT_PARAMS={"extensions":{"Behat\\\\MinkExtension":{"base_url":"' . $url . '"},"Drupal\\\\DrupalExtension":{"drupal":{"drupal_root":"' . $root . '"},"drush":{' . $drush_param . '}}}}');
-
+  function test($opts = ['feature' => NULL, 'profile' => 'local']) {
     $behat_cmd = $this->taskExec('behat')
       ->arg('--config behat/behat.yml')
+      ->arg(' --profile ' . $opts['profile'])
       ->arg(' --format progress');
 
     if ($opts['feature']) {
