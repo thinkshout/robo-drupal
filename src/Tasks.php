@@ -21,8 +21,9 @@ class Tasks extends \Robo\Tasks
    * @option string db-user Database user.
    * @option string db-name Database name.
    * @option string db-host Database host.
+   * @option string branch Branch.
    */
-  function configure($opts = ['db-pass' => NULL, 'db-user' => NULL, 'db-name' => NULL, 'db-host' => NULL]) {
+  function configure($opts = ['db-pass' => NULL, 'db-user' => NULL, 'db-name' => NULL, 'db-host' => NULL, 'branch' => NULL]) {
 
     $settings = $this->getDefaultPressflowSettings();
 
@@ -78,9 +79,11 @@ class Tasks extends \Robo\Tasks
     // Config Directory
     $settings['config_directory_name'] = $this->projectProperties['config_dir'];
 
-    // Terminus env
+    // Branch
     $branch = $this->projectProperties['branch'];
-    $terminus_env = ($branch == 'master') ? 'dev' : $branch;
+
+    // Terminus env
+    $this->projectProperties['terminus_env'] = ($branch == 'master') ? 'dev' : $branch;
 
     $json_settings = json_encode($settings);
 
@@ -92,7 +95,13 @@ class Tasks extends \Robo\Tasks
       ->append()
       ->line('# Generated configuration')
       ->line('PRESSFLOW_SETTINGS=' . $json_settings)
-      ->line('TERMINUS_ENV=' . $terminus_env)
+      ->line('TERMINUS_ENV=' . $this->projectProperties['terminus_env'])
+      ->run();
+
+    // If branch was specified, write it out to the .env file for future runs.
+    $result = $this->taskWriteToFile('.env')
+      ->append()
+      ->line('TS_BRANCH=' . $branch)
       ->run();
 
     return $result;
@@ -223,9 +232,9 @@ EOF';
    */
   function pantheonTest($opts = ['feature' => NULL]) {
     $project = $this->projectProperties['project'];
-    $branch = $this->projectProperties['branch'];
-    $url = "https://$branch-$project.pantheonsite.io";
-    $alias = "pantheon.$project.$branch";
+    $env = $this->projectProperties['branch'];
+    $url = "https://$env-$project.pantheonsite.io";
+    $alias = "pantheon.$project.$env";
     $drush_param = '"alias":"' . $alias . '"';
     return $this->test(['url' => $url, 'drush_param' => $drush_param, 'feature' => $opts['feature']]);
   }
@@ -271,16 +280,16 @@ EOF';
 
     $properties['escaped_web_root_path'] = $this->escapeArg($properties['web_root']);
 
-    // Get the current branch using the simple exec command.
-    $command = 'git symbolic-ref --short -q HEAD';
-    $process = new Process($command);
-    $process->setTimeout(null);
-    $process->setWorkingDirectory($properties['working_dir']);
-    $process->run();
+    if (!isset($properties['branch'])) {
+      // Get the current branch using the simple exec command.
+      $command = 'git symbolic-ref --short -q HEAD';
+      $process = new Process($command);
+      $process->setTimeout(NULL);
+      $process->setWorkingDirectory($properties['working_dir']);
+      $process->run();
 
-    $branch = $process->getOutput();
+      $branch = $process->getOutput();
 
-    if ($branch) {
       $properties['branch'] = trim($branch);
     }
 
@@ -342,17 +351,17 @@ EOF';
    * @return \Robo\Result
    */
   function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE]) {
-    $branch = $this->projectProperties['branch'];
+    $terminus_env = $this->projectProperties['terminus_env'];
     $result = $this->taskExec('terminus site environment-info')->run();
 
     // Check for existing multidev and prompt to create.
-    if (!$result->wasSuccessful() && $branch != 'master') {
+    if (!$result->wasSuccessful()) {
       if (!$opts['y']) {
         if (!$this->confirm('No matching multidev found. Create it?')) {
           return FALSE;
         }
       }
-      $this->taskExec("terminus site create-env --to-env=$branch --from-env=dev")
+      $this->taskExec("terminus site create-env --to-env=$terminus_env --from-env=dev")
         ->run();
     }
 
