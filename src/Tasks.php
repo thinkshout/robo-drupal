@@ -271,7 +271,7 @@ EOF';
     $properties['escaped_web_root_path'] = $this->escapeArg($properties['web_root']);
 
     // Get the current branch using the simple exec command.
-    $branch = exec('git symbolic-ref --short -q HEAD');
+    $branch = exec('cd ' . $properties['working_dir'] . '; git symbolic-ref --short -q HEAD');
 
     if ($branch) {
       $properties['branch'] = $branch;
