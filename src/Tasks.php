@@ -229,6 +229,19 @@ EOF';
     return $this->test(['url' => $url, 'drush_param' => $drush_param, 'feature' => $opts['feature']]);
   }
 
+
+  /**
+   * Run php's built in webserver at localhost:PORT.
+   *
+   * @option int port Port number of listen on. Defaults to 8088.
+   */
+  function run($opts = ['port' => 8088]) {
+    // execute server in background
+    $this->taskServer($opts['port'])
+      ->background()
+      ->run();
+  }
+
   private function getProjectProperties() {
 
     $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => ''];
