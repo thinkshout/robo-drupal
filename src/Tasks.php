@@ -3,6 +3,7 @@
 namespace ThinkShout\RoboDrupal;
 
 use Drupal\Component\Utility\Crypt;
+use Symfony\Component\Process\Process;
 
 class Tasks extends \Robo\Tasks
 {
@@ -271,10 +272,16 @@ EOF';
     $properties['escaped_web_root_path'] = $this->escapeArg($properties['web_root']);
 
     // Get the current branch using the simple exec command.
-    $branch = exec('cd ' . $properties['working_dir'] . '; git symbolic-ref --short -q HEAD');
+    $command = 'git symbolic-ref --short -q HEAD';
+    $process = new Process($command);
+    $process->setTimeout(null);
+    $process->setWorkingDirectory($properties['working_dir']);
+    $process->run();
+
+    $branch = $process->getOutput();
 
     if ($branch) {
-      $properties['branch'] = $branch;
+      $properties['branch'] = trim($branch);
     }
 
     if ($db_name = getenv('TS_DB_NAME')) {
