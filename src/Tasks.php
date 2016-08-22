@@ -15,6 +15,46 @@ class Tasks extends \Robo\Tasks
   }
 
   /**
+   * Initialize the project for the first time.
+   *
+   * @return \Robo\Result
+   */
+  public function init() {
+    $git_repo = exec('basename `git rev-parse --show-toplevel`');
+
+    // Remove instructions for creating a new repo, because we've got one now.
+    $readme_contents = file_get_contents('README.md');
+    $start_string = '### Initial build (new repo)';
+    $end_string = '### Initial build (existing repo)';
+    $from = $this->findAllTextBetween($start_string, $end_string, $readme_contents);
+
+    $find_replaces = array(
+      array(
+        'source' => 'composer.json',
+        'from' => '"name": "thinkshout/drupal-project",',
+        'to' => '"name": "thinkshout/' . $git_repo .'",',
+      ),
+      array(
+        'source' => '.env.dist',
+        'from' => 'TS_PROJECT="SITE"',
+        'to' => 'TS_PROJECT="' . $git_repo .'"',
+      ),
+      array(
+        'source' => 'README.md',
+        'from' => array($from, 'new-project-name'),
+        'to' => array($end_string, $git_repo),
+      ),
+    );
+
+    foreach ($find_replaces as $find_replace) {
+      $this->taskReplaceInFile($find_replace['source'])
+        ->from($find_replace['from'])
+        ->to($find_replace['to'])
+        ->run();
+    }
+  }
+
+  /**
    * Generate configuration in your .env file.
    *
    * @option string db-pass Database password.
@@ -108,54 +148,104 @@ class Tasks extends \Robo\Tasks
   }
 
   /**
-   * Install dependencies and the actual Drupal site.
-   *
-   * @option boolean $pantheon Pantheon install.
+   * Perform git checkout of host files.
+   */
+  function deploy() {
+
+    $repo = $this->projectProperties['host_repo'];
+
+    $branch = $this->projectProperties['branch'];
+
+    $webroot = $this->projectProperties['web_root'];
+
+    $tmpDir = $this->getTmpDir();
+    $hostDirName = $this->getFetchDirName();
+    $this->stopOnFail();
+    $fs = $this->taskFilesystemStack()
+      ->mkdir($tmpDir)
+      ->mkdir("$tmpDir/$hostDirName")
+      ->run();
+
+    // Make sure we have an empty temp dir.
+    $this->taskCleanDir([$tmpDir])
+      ->run();
+
+    // Git checkout of the matching remote branch.
+    $this->taskGitStack()
+      ->stopOnFail()
+      ->cloneRepo($repo, "$tmpDir/$hostDirName")
+      ->dir("$tmpDir/$hostDirName")
+      ->checkout($branch)
+      ->run();
+
+    // Get the last commit from the remote branch.
+    $last_remote_commit = $this->taskExec('git log -1 --date=short --pretty=format:%ci')
+      ->dir("$tmpDir/$hostDirName")
+      ->run();
+    $last_commit_date = trim($last_remote_commit->getMessage());
+
+    $commit_message = $this->_exec("git log --pretty=format:'%h %s' --no-merges --since='$last_commit_date'")->getMessage();
+
+    $commit_message = "Combined commits: \n" . $commit_message;
+
+    // Copy webroot to our deploy directory.
+    $this->taskRsync()
+      ->fromPath("./")
+      ->toPath("$tmpDir/deploy")
+      ->args('-a', '-v', '-z', '--no-group', '--no-owner')
+      ->excludeVcs()
+      ->exclude('.gitignore')
+      ->exclude('sites/default/settings.local.php')
+      ->exclude('sites/default/files')
+      ->printed(FALSE)
+      ->run();
+
+    // Move host .git into our deployment directory.
+    $this->taskRsync()
+      ->fromPath("$tmpDir/$hostDirName/.git")
+      ->toPath("$tmpDir/deploy")
+      ->args('-a', '-v', '-z', '--no-group', '--no-owner')
+      ->printed(FALSE)
+      ->run();
+
+    $this->taskGitStack()
+      ->stopOnFail()
+      ->dir("$tmpDir/deploy")
+      ->add('-A')
+      ->commit($commit_message)
+      ->push('origin', $branch)
+//      ->tag('0.6.0')
+//      ->push('origin','0.6.0')
+      ->run();
+
+    // Clean up
+//    $this->taskDeleteDir($tmpDir)
+//      ->run();
+
+
+  }
+
+  /**
+   * Install or re-install the Drupal site.
    *
    * @return \Robo\Result
    */
-  function install($opts = ['pantheon' => FALSE]) {
-    $pantheon = $opts['pantheon'];
+  function install() {
+
     $install_cmd = 'site-install config_installer -y';
 
-    if ($pantheon) {
-      $install_cmd = 'terminus drush "' . $install_cmd . '"';
-      // Pantheon wants the site in SFTP for installs.
-      $this->_exec('terminus site set-connection-mode --mode=sftp');
+    // Install dependencies. Only works locally.
+    $this->taskComposerInstall()
+      ->optimizeAutoloader()
+      ->run();
 
-      // Even in SFTP mode, the settings.php file might have too restrictive
-      // permissions. We use SFTP to chmod the settings file before installing.
-      $sftp_command = trim($this->_exec('terminus site connection-info --field=sftp_command')->getMessage());
-      $sftp_command = str_replace('sftp', 'sftp -b -', $sftp_command);
-      $sftp_command .= ' << EOF
-chmod 644 code/sites/default/settings.php
-EOF';
-      $this->_exec($sftp_command);
+    $this->_chmod($this->projectProperties['web_root'] . '/sites/default/settings.php', 0755);
+    $install_cmd = 'drush ' . $install_cmd;
 
-      // Run the installation.
-      $result = $this->taskExec($install_cmd)
-        ->run();
-
-      // Put the site back into git mode.
-      $this->_exec('terminus site set-connection-mode --mode=git');
-    }
-    else {
-      // Install dependencies. Only works locally.
-      $this->taskComposerInstall()
-        ->optimizeAutoloader()
-        ->run();
-
-      $this->_chmod($this->projectProperties['web_root'] . '/sites/default/settings.php', 0755);
-      $install_cmd = 'drush ' . $install_cmd;
-
-      // Run the installation.
-      $result = $this->taskExec($install_cmd)
-        ->dir($this->projectProperties['web_root'])
-        ->run();
-    }
-
-    // Set our install to TRUE to disable file based config on install.
-//    putenv("DRUPAL_INSTALL=TRUE");
+    // Run the installation.
+    $result = $this->taskExec($install_cmd)
+      ->dir($this->projectProperties['web_root'])
+      ->run();
 
     if ($result->wasSuccessful()) {
       $this->say('Install complete');
@@ -205,6 +295,92 @@ EOF';
   }
 
   /**
+   * Run php's built in webserver at localhost:PORT.
+   *
+   * @option int port Port number of listen on. Defaults to 8088.
+   */
+  function run($opts = ['port' => 8088]) {
+    // execute server in background
+    $this->taskServer($opts['port'])
+      ->background()
+      ->run();
+  }
+
+  /**
+   * Prepare a Pantheon multidev for this project/branch.
+   *
+   * @option boolean install Trigger an install on Pantheon.
+   * @option boolean y Answer prompts with y.
+   *
+   * @return \Robo\Result
+   */
+  function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE]) {
+    $terminus_env = $this->projectProperties['terminus_env'];
+    $result = $this->taskExec('terminus site environment-info')->run();
+
+    // Check for existing multidev and prompt to create.
+    if (!$result->wasSuccessful()) {
+      if (!$opts['y']) {
+        if (!$this->confirm('No matching multidev found. Create it?')) {
+          return FALSE;
+        }
+      }
+      $this->taskExec("terminus site create-env --to-env=$terminus_env --from-env=dev")
+        ->run();
+    }
+
+    // Make sure our site is awake.
+    $this->_exec('terminus site wake');
+
+    // Ensure we're in git mode.
+    $this->_exec('terminus site set-connection-mode --mode=git');
+
+    // Deployment
+    $this->deploy();
+
+    // Trigger remote install.
+    if ($opts['install']) {
+      $this->_exec('terminus site wipe --yes');
+      return $this->pantheonInstall();
+    }
+  }
+
+  /**
+   * Install site on Pantheon.
+   *
+   * @return \Robo\Result
+   */
+  function pantheonInstall() {
+    $install_cmd = 'site-install config_installer -y';
+
+    $install_cmd = 'terminus drush "' . $install_cmd . '"';
+    // Pantheon wants the site in SFTP for installs.
+    $this->_exec('terminus site set-connection-mode --mode=sftp');
+
+    // Even in SFTP mode, the settings.php file might have too restrictive
+    // permissions. We use SFTP to chmod the settings file before installing.
+    $sftp_command = trim($this->_exec('terminus site connection-info --field=sftp_command')->getMessage());
+    $sftp_command = str_replace('sftp', 'sftp -b -', $sftp_command);
+    $sftp_command .= ' << EOF
+chmod 644 code/sites/default/settings.php
+EOF';
+    $this->_exec($sftp_command);
+
+    // Run the installation.
+    $result = $this->taskExec($install_cmd)
+      ->run();
+
+    // Put the site back into git mode.
+    $this->_exec('terminus site set-connection-mode --mode=git');
+
+    if ($result->wasSuccessful()) {
+      $this->say('Install complete');
+    }
+
+    return $result;
+  }
+
+  /**
    * Run tests against the Pantheon multidev.
    *
    * @option string feature Single feature file to run.
@@ -225,19 +401,6 @@ EOF';
     putenv('BEHAT_PARAMS={"extensions":{"Behat\\\\MinkExtension":{"base_url":"' . $url . '"},"Drupal\\\\DrupalExtension":{"drupal":{"drupal_root":"' . $root . '"},"drush":{' . $drush_param . '}}}}');
 
     return $this->test(['profile' => 'pantheon', 'feature' => $opts['feature']]);
-  }
-
-
-  /**
-   * Run php's built in webserver at localhost:PORT.
-   *
-   * @option int port Port number of listen on. Defaults to 8088.
-   */
-  function run($opts = ['port' => 8088]) {
-    // execute server in background
-    $this->taskServer($opts['port'])
-      ->background()
-      ->run();
   }
 
   private function getProjectProperties() {
@@ -331,123 +494,6 @@ EOF';
   }
 
   /**
-   * Prepare a Pantheon multidev for this project/branch.
-   *
-   * @option boolean install Trigger an install on Pantheon.
-   * @option boolean y Answer prompts with y.
-   *
-   * @return \Robo\Result
-   */
-  function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE]) {
-    $terminus_env = $this->projectProperties['terminus_env'];
-    $result = $this->taskExec('terminus site environment-info')->run();
-
-    // Check for existing multidev and prompt to create.
-    if (!$result->wasSuccessful()) {
-      if (!$opts['y']) {
-        if (!$this->confirm('No matching multidev found. Create it?')) {
-          return FALSE;
-        }
-      }
-      $this->taskExec("terminus site create-env --to-env=$terminus_env --from-env=dev")
-        ->run();
-    }
-
-    // Make sure our site is awake.
-    $this->_exec('terminus site wake');
-
-    // Ensure we're in git mode.
-    $this->_exec('terminus site set-connection-mode --mode=git');
-
-    // Deployment
-    $this->deploy();
-
-    // Trigger remote install.
-    if ($opts['install']) {
-      $this->_exec('terminus site wipe --yes');
-      return $this->install(array('pantheon' => TRUE));
-    }
-  }
-
-  /**
-   * Perform git checkout of host files.
-   */
-  function deploy() {
-
-    $repo = $this->projectProperties['host_repo'];
-
-    $branch = $this->projectProperties['branch'];
-
-    $webroot = $this->projectProperties['web_root'];
-
-    $tmpDir = $this->getTmpDir();
-    $hostDirName = $this->getFetchDirName();
-    $this->stopOnFail();
-    $fs = $this->taskFilesystemStack()
-      ->mkdir($tmpDir)
-      ->mkdir("$tmpDir/$hostDirName")
-      ->run();
-
-    // Make sure we have an empty temp dir.
-    $this->taskCleanDir([$tmpDir])
-      ->run();
-
-    // Git checkout of the matching remote branch.
-    $this->taskGitStack()
-      ->stopOnFail()
-      ->cloneRepo($repo, "$tmpDir/$hostDirName")
-      ->dir("$tmpDir/$hostDirName")
-      ->checkout($branch)
-      ->run();
-
-    // Get the last commit from the remote branch.
-    $last_remote_commit = $this->taskExec('git log -1 --date=short --pretty=format:%ci')
-      ->dir("$tmpDir/$hostDirName")
-      ->run();
-    $last_commit_date = trim($last_remote_commit->getMessage());
-
-    $commit_message = $this->_exec("git log --pretty=format:'%h %s' --no-merges --since='$last_commit_date'")->getMessage();
-
-    $commit_message = "Combined commits: \n" . $commit_message;
-
-    // Copy webroot to our deploy directory.
-    $this->taskRsync()
-      ->fromPath("./")
-      ->toPath("$tmpDir/deploy")
-      ->args('-a', '-v', '-z', '--no-group', '--no-owner')
-      ->excludeVcs()
-      ->exclude('.gitignore')
-      ->exclude('sites/default/settings.local.php')
-      ->exclude('sites/default/files')
-      ->printed(FALSE)
-      ->run();
-
-    // Move host .git into our deployment directory.
-    $this->taskRsync()
-      ->fromPath("$tmpDir/$hostDirName/.git")
-      ->toPath("$tmpDir/deploy")
-      ->args('-a', '-v', '-z', '--no-group', '--no-owner')
-      ->printed(FALSE)
-      ->run();
-
-    $this->taskGitStack()
-      ->stopOnFail()
-      ->dir("$tmpDir/deploy")
-      ->add('-A')
-      ->commit($commit_message)
-      ->push('origin', $branch)
-//      ->tag('0.6.0')
-//      ->push('origin','0.6.0')
-      ->run();
-
-    // Clean up
-//    $this->taskDeleteDir($tmpDir)
-//      ->run();
-
-
-  }
-
-  /**
    * Return the default array of pressflow settings.
    * @return array
    */
@@ -493,46 +539,6 @@ EOF';
       'hash_salt' => '',
       'config_directory_name' => '../config',
     );
-  }
-
-  /**
-   * Initialize the project for the first time.
-   *
-   * @return \Robo\Result
-   */
-  public function init() {
-    $git_repo = exec('basename `git rev-parse --show-toplevel`');
-
-    // Remove instructions for creating a new repo, because we've got one now.
-    $readme_contents = file_get_contents('README.md');
-    $start_string = '### Initial build (new repo)';
-    $end_string = '### Initial build (existing repo)';
-    $from = $this->findAllTextBetween($start_string, $end_string, $readme_contents);
-
-    $find_replaces = array(
-      array(
-        'source' => 'composer.json',
-        'from' => '"name": "thinkshout/drupal-project",',
-        'to' => '"name": "thinkshout/' . $git_repo .'",',
-      ),
-      array(
-        'source' => '.env.dist',
-        'from' => 'TS_PROJECT="SITE"',
-        'to' => 'TS_PROJECT="' . $git_repo .'"',
-      ),
-      array(
-        'source' => 'README.md',
-        'from' => array($from, 'new-project-name'),
-        'to' => array($end_string, $git_repo),
-      ),
-    );
-
-    foreach ($find_replaces as $find_replace) {
-      $this->taskReplaceInFile($find_replace['source'])
-        ->from($find_replace['from'])
-        ->to($find_replace['to'])
-        ->run();
-    }
   }
 
   /**
