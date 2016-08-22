@@ -183,7 +183,7 @@ EOF';
    */
   function test($opts = ['feature' => NULL, 'profile' => 'local']) {
     $behat_cmd = $this->taskExec('behat')
-      ->arg('--config behat/behat.yml')
+      ->arg('--config behat/behat.' . $opts['profile'] . '.yml')
       ->arg(' --profile ' . $opts['profile'])
       ->arg(' --format progress');
 
