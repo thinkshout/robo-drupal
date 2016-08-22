@@ -209,7 +209,13 @@ EOF';
     $url = "https://$branch-$project.pantheonsite.io";
     $alias = "pantheon.$project.$branch";
     $drush_param = '"alias":"' . $alias . '"';
-    return $this->test(['url' => $url, 'drush_param' => $drush_param, 'feature' => $opts['feature']]);
+
+    $root = $this->projectProperties['web_root'];
+
+    // Add the specific behat config to our environment.
+    putenv('BEHAT_PARAMS={"extensions":{"Behat\\\\MinkExtension":{"base_url":"' . $url . '"},"Drupal\\\\DrupalExtension":{"drupal":{"drupal_root":"' . $root . '"},"drush":{' . $drush_param . '}}}}');
+
+    return $this->test(['profile' => 'pantheon', 'feature' => $opts['feature']]);
   }
 
 
