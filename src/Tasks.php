@@ -403,7 +403,7 @@ EOF';
     return $this->test(['profile' => 'pantheon', 'feature' => $opts['feature']]);
   }
 
-  private function getProjectProperties() {
+  protected function getProjectProperties() {
 
     $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => ''];
 
