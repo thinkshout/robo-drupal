@@ -184,8 +184,8 @@ class Tasks extends \Robo\Tasks
       ->run();
     $last_commit_date = trim($last_remote_commit->getMessage());
 
-    $commit_message = $this->_exec("git log --pretty=format:'%h %s' --no-merges --since='$last_commit_date'")->getMessage();
-
+    $commit_message = $this->taskExec("git log --pretty=format:'%h %s' --no-merges --since='$last_commit_date'")->run()->getMessage();
+    
     $commit_message = "Combined commits: \n" . $commit_message;
 
     // Copy webroot to our deploy directory.
