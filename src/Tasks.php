@@ -185,7 +185,7 @@ class Tasks extends \Robo\Tasks
     $last_commit_date = trim($last_remote_commit->getMessage());
 
     $commit_message = $this->taskExec("git log --pretty=format:'%h %s' --no-merges --since='$last_commit_date'")->run()->getMessage();
-    
+
     $commit_message = "Combined commits: \n" . $commit_message;
 
     // Copy webroot to our deploy directory.
@@ -232,7 +232,7 @@ class Tasks extends \Robo\Tasks
    */
   function install() {
 
-    $install_cmd = 'site-install config_installer -y';
+    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' -y';
 
     // Install dependencies. Only works locally.
     $this->taskComposerInstall()
@@ -351,7 +351,7 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function pantheonInstall() {
-    $install_cmd = 'site-install config_installer -y';
+      $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' -y';
 
     $install_cmd = 'terminus drush "' . $install_cmd . '"';
     // Pantheon wants the site in SFTP for installs.
@@ -405,7 +405,7 @@ EOF';
 
   protected function getProjectProperties() {
 
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => ''];
+    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard'];
 
     $properties['working_dir'] = getcwd();
 
