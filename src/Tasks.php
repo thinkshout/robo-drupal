@@ -32,12 +32,12 @@ class Tasks extends \Robo\Tasks
       array(
         'source' => 'composer.json',
         'from' => '"name": "thinkshout/drupal-project",',
-        'to' => '"name": "thinkshout/' . $git_repo .'",',
+        'to' => '"name": "thinkshout/' . $git_repo . '",',
       ),
       array(
         'source' => '.env.dist',
         'from' => 'TS_PROJECT="SITE"',
-        'to' => 'TS_PROJECT="' . $git_repo .'"',
+        'to' => 'TS_PROJECT="' . $git_repo . '"',
       ),
       array(
         'source' => 'README.md',
@@ -57,13 +57,21 @@ class Tasks extends \Robo\Tasks
   /**
    * Generate configuration in your .env file.
    *
+   * @arg array opts function options:
+   *
    * @option string db-pass Database password.
    * @option string db-user Database user.
    * @option string db-name Database name.
    * @option string db-host Database host.
    * @option string branch Branch.
    */
-  function configure($opts = ['db-pass' => NULL, 'db-user' => NULL, 'db-name' => NULL, 'db-host' => NULL, 'branch' => NULL]) {
+  function configure($opts = [
+    'db-pass' => NULL,
+    'db-user' => NULL,
+    'db-name' => NULL,
+    'db-host' => NULL,
+    'branch' => NULL,
+  ]) {
 
     $settings = $this->getDefaultPressflowSettings();
 
@@ -131,7 +139,7 @@ class Tasks extends \Robo\Tasks
     $this->_remove('.env');
     $this->_copy('.env.dist', '.env');
 
-    $result = $this->taskWriteToFile('.env')
+    $this->taskWriteToFile('.env')
       ->append()
       ->line('# Generated configuration')
       ->line('PRESSFLOW_SETTINGS=' . $json_settings)
