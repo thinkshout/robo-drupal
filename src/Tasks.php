@@ -247,8 +247,21 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function install() {
-
-    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' -y';
+    // Use user environment settings if we have them.
+    if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
+      $settings = json_decode($system_defaults, TRUE);
+      $db_settings = $settings['databases']['default']['default'];
+      $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] .
+        ' --db-url=mysql://' . $db_settings['username'] .
+        ':' . $db_settings['password'] .
+        '@' . $db_settings['host'] .
+        ':' . $db_settings['port'] .
+        '/' . $db_settings['database'] .
+        ' -y';
+    }
+    else {
+      $install_cmd = 'site-install standard -y';
+    }
 
     // Install dependencies. Only works locally.
     $this->taskComposerInstall()
