@@ -64,6 +64,7 @@ class Tasks extends \Robo\Tasks
    * @option string db-name Database name.
    * @option string db-host Database host.
    * @option string branch Branch.
+   * @option string profile install profile.
    */
   function configure($opts = [
     'db-pass' => NULL,
@@ -71,6 +72,7 @@ class Tasks extends \Robo\Tasks
     'db-name' => NULL,
     'db-host' => NULL,
     'branch' => NULL,
+    'profile' => 'standard',
   ]) {
 
     $settings = $this->getDefaultPressflowSettings();
@@ -147,9 +149,15 @@ class Tasks extends \Robo\Tasks
       ->run();
 
     // If branch was specified, write it out to the .env file for future runs.
-    $result = $this->taskWriteToFile('.env')
+    $this->taskWriteToFile('.env')
       ->append()
       ->line('TS_BRANCH=' . $branch)
+      ->run();
+
+    // If profile was specified, write it out to the .env file for future runs.
+    $result = $this->taskWriteToFile('.env')
+      ->append()
+      ->line('TS_INSTALL_PROFILE=' . $this->projectProperties['profile'])
       ->run();
 
     return $result;
