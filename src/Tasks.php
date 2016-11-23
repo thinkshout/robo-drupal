@@ -302,12 +302,12 @@ class Tasks extends \Robo\Tasks
    */
   function test($opts = ['feature' => NULL, 'profile' => 'local']) {
     $behat_cmd = $this->taskExec('behat')
-      ->arg('--config behat/behat.' . $opts['profile'] . '.yml')
-      ->arg(' --profile ' . $opts['profile'])
-      ->arg(' --format progress');
+      ->option('config', 'behat/behat.' . $opts['profile'] . '.yml')
+      ->option('profile', $opts['profile'])
+      ->option('format', 'progress');
 
     if ($opts['feature']) {
-      $behat_cmd->arg($opts['feature']);
+      $behat_cmd->rawArg($opts['feature']);
     }
 
     $behat_result = $behat_cmd->run();
