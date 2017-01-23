@@ -391,7 +391,7 @@ class Tasks extends \Robo\Tasks
     $sftp_command = trim($this->_exec('terminus site connection-info --field=sftp_command')->getMessage());
     $sftp_command = str_replace('sftp', 'sftp -b -', $sftp_command);
     $sftp_command .= ' << EOF
-chmod 644 code/sites/default/settings.php
+chmod 644 code/web/sites/default/settings.php
 EOF';
     $this->_exec($sftp_command);
 
