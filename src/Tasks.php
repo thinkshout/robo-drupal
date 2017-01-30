@@ -393,8 +393,16 @@ class Tasks extends \Robo\Tasks
     // permissions. We use SFTP to chmod the settings file before installing.
     $sftp_command = trim($this->_exec("terminus connection:info --field=sftp_command $terminus_site_env")->getMessage());
     $sftp_command = str_replace('sftp', 'sftp -b -', $sftp_command);
+    // Use webroot to find settings.php assume  webroot is the gitroot if no
+    // webroot is specified.
+    if (getenv('TS_WEB_ROOT')) {
+      $web_root = getenv('TS_WEB_ROOT') . '/';
+    }
+    else {
+      $web_root = '';
+    }
     $sftp_command .= ' << EOF
-chmod 644 code/web/sites/default/settings.php
+chmod 644 code/' . $web_root . 'sites/default/settings.php
 EOF';
     $this->_exec($sftp_command);
 
