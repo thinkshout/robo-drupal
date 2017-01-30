@@ -344,8 +344,10 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE]) {
-    $terminus_env = $this->projectProperties['terminus_env'];
-    $result = $this->taskExec('terminus site environment-info')->run();
+    $terminus_site = getenv('TERMINUS_SITE');
+    $terminus_env = getenv('TERMINUS_ENV');
+    $terminus_site_env = $this->getPantheonSiteEnv();
+    $result = $this->taskExec("terminus env:info $terminus_site_env")->run();
 
     // Check for existing multidev and prompt to create.
     if (!$result->wasSuccessful()) {
@@ -354,23 +356,23 @@ class Tasks extends \Robo\Tasks
           return FALSE;
         }
       }
-      $this->taskExec("terminus site create-env --to-env=$terminus_env --from-env=dev")
+      $this->taskExec("terminus multidev:create $terminus_site.dev $terminus_env")
         ->run();
     }
 
     // Make sure our site is awake.
-    $this->_exec('terminus site wake');
+    $this->_exec("terminus env:wake $terminus_site_env");
 
     // Ensure we're in git mode.
-    $this->_exec('terminus site set-connection-mode --mode=git');
+    $this->_exec("terminus connection:set $terminus_site_env git");
 
     // Deployment
     $this->deploy();
 
     // Trigger remote install.
     if ($opts['install']) {
-      $this->_exec('terminus site wipe --yes');
-      return $this->pantheonInstall();
+      $this->_exec("terminus env:wipe $terminus_site_env --yes");
+      return $this->install(array('pantheon' => TRUE));
     }
   }
 
@@ -380,15 +382,16 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function pantheonInstall() {
-      $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' -y';
+    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' -y';
 
-    $install_cmd = 'terminus drush "' . $install_cmd . '"';
+    $terminus_site_env = $this->getPantheonSiteEnv();
+    $install_cmd = "terminus remote:drush $terminus_site_env -- $install_cmd";
     // Pantheon wants the site in SFTP for installs.
-    $this->_exec('terminus site set-connection-mode --mode=sftp');
+    $this->_exec("terminus connection:set $terminus_site_env sftp");
 
     // Even in SFTP mode, the settings.php file might have too restrictive
     // permissions. We use SFTP to chmod the settings file before installing.
-    $sftp_command = trim($this->_exec('terminus site connection-info --field=sftp_command')->getMessage());
+    $sftp_command = trim($this->_exec("terminus connection:info --field=sftp_command $terminus_site_env")->getMessage());
     $sftp_command = str_replace('sftp', 'sftp -b -', $sftp_command);
     $sftp_command .= ' << EOF
 chmod 644 code/web/sites/default/settings.php
@@ -400,7 +403,7 @@ EOF';
       ->run();
 
     // Put the site back into git mode.
-    $this->_exec('terminus site set-connection-mode --mode=git');
+    $this->_exec("terminus connection:set $terminus_site_env git");
 
     if ($result->wasSuccessful()) {
       $this->say('Install complete');
@@ -500,6 +503,13 @@ EOF';
       ->regex("/'$key' => '[^'\\\\]*(?:\\\\.[^'\\\\]*)*',/s")
       ->to("'$key' => '". $value . "',")
       ->run();
+  }
+
+  /**
+   * Get "<site>.<env>" commonly used in terminus commands.
+   */
+  protected function getPantheonSiteEnv() {
+    return join('.', [getenv('TERMINUS_SITE'), getenv('TERMINUS_ENV')]);
   }
 
   /**
