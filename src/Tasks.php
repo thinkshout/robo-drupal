@@ -413,7 +413,6 @@ EOF';
     // Run the installation.
     $result = $this->taskExec($install_cmd)
       ->run();
-
     // Put the site back into git mode.
     $this->_exec("terminus connection:set $terminus_site_env git");
 
