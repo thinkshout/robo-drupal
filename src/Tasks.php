@@ -157,7 +157,7 @@ class Tasks extends \Robo\Tasks
     // If profile was specified, write it out to the .env file for future runs.
     $result = $this->taskWriteToFile('.env')
       ->append()
-      ->line('TS_INSTALL_PROFILE=' . $this->projectProperties['profile'])
+      ->line('TS_INSTALL_PROFILE=' . $this->projectProperties['install_profile'])
       ->run();
 
     return $result;
