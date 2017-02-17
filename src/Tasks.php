@@ -356,6 +356,10 @@ class Tasks extends \Robo\Tasks
           return FALSE;
         }
       }
+      if (strlen($terminus_env) > 11) {
+        $this->say('Couldn\'t create multidev: Pantheon environment names are restricted to 11 characters.');
+        return FALSE;
+      }
       $this->taskExec("terminus multidev:create $terminus_site.dev $terminus_env")
         ->run();
     }
