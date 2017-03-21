@@ -376,7 +376,7 @@ class Tasks extends \Robo\Tasks
     // Trigger remote install.
     if ($opts['install']) {
       $this->_exec("terminus env:wipe $terminus_site_env --yes");
-      return $this->install(array('pantheon' => TRUE));
+      return $this->pantheonInstall();
     }
   }
 
