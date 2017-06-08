@@ -195,12 +195,12 @@ class Tasks extends \Robo\Tasks
       ->run();
 
     // Get the last commit from the remote branch.
-    $last_remote_commit = $this->taskExec('git log -1 --date=short --pretty=format:%ci')
+    $last_remote_commit = $this->taskExec('git --no-pager log -1 --date=short --pretty=format:%ci')
       ->dir("$tmpDir/$hostDirName")
       ->run();
     $last_commit_date = trim($last_remote_commit->getMessage());
 
-    $commit_message = $this->taskExec("git log --pretty=format:'%h %s' --no-merges --since='$last_commit_date'")->run()->getMessage();
+    $commit_message = $this->taskExec("git --no-pager log --pretty=format:'%h %s' --no-merges --since='$last_commit_date'")->run()->getMessage();
 
     $commit_message = "Combined commits: \n" . $commit_message;
 
