@@ -57,8 +57,6 @@ class Tasks extends \Robo\Tasks
   /**
    * Generate configuration in your .env file.
    *
-   * @arg array opts function options:
-   *
    * @option string db-pass Database password.
    * @option string db-user Database user.
    * @option string db-name Database name.
