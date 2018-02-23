@@ -403,8 +403,10 @@ class Tasks extends \Robo\Tasks
     else {
       $web_root = '';
     }
+    $default_dir = 'code/' . $web_root . 'sites/default';
     $sftp_command .= ' << EOF
-chmod 644 code/' . $web_root . 'sites/default/settings.php
+chmod 644 ' . $default_dir . '
+chmod 644 ' . $default_dir . '/settings.php
 EOF';
     $this->_exec($sftp_command);
 
