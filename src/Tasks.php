@@ -192,6 +192,16 @@ class Tasks extends \Robo\Tasks
       ->checkout($branch)
       ->run();
 
+    // Discard any local changes made to the github repo during install.
+    // We only do this on Circle because if we do it on our local, it might
+    // discard our changes.
+    if(getenv('CIRCLECI')) {
+      $this->taskGitStack()
+        ->stopOnFail()
+        ->checkout($branch)
+        ->run();
+    }
+
     // Get the last commit from the remote branch.
     $last_remote_commit = $this->taskExec('git --no-pager log -1 --date=short --pretty=format:%ci')
       ->dir("$tmpDir/$hostDirName")
@@ -222,21 +232,20 @@ class Tasks extends \Robo\Tasks
       ->printed(FALSE)
       ->run();
 
+    // Rerun composer install for optimization and no dev items.
+    $this->taskComposerInstall()
+      ->dir("$tmpDir/deploy")
+      ->optimizeAutoloader()
+      ->noDev()
+      ->run();
+
     $this->taskGitStack()
       ->stopOnFail()
       ->dir("$tmpDir/deploy")
       ->add('-A')
       ->commit($commit_message)
       ->push('origin', $branch)
-//      ->tag('0.6.0')
-//      ->push('origin','0.6.0')
       ->run();
-
-    // Clean up
-//    $this->taskDeleteDir($tmpDir)
-//      ->run();
-
-
   }
 
   /**
