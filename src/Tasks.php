@@ -299,6 +299,8 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function test($opts = ['feature' => NULL, 'profile' => 'local']) {
+    $this->setUpBehat();
+
     $behat_cmd = $this->taskExec('behat')
       ->option('config', 'behat/behat.' . $opts['profile'] . '.yml')
       ->option('profile', $opts['profile'])
@@ -319,6 +321,37 @@ class Tasks extends \Robo\Tasks
 //
 //    // @TODO will need to address multiple results when we enable other tests as well.
 //    return $behat_result->merge($unit_result);
+  }
+
+  /**
+   * Ensure that the filesystem has everything Behat needs. At present, that's
+   * only chromedriver, AKA "Headless Chrome".
+   */
+  function setUpBehat() {
+    // Ensure that this system has headless Chrome.
+    if (!$this->taskExec('which chromedriver')->run()->wasSuccessful()) {
+      exec('uname', $output);
+      $os = array_shift($output);
+      // Here we assume either OS X (a dev's env) or not (a CI env).
+      if ($os === 'Darwin') {
+        $this->taskExec('brew install chromedriver')
+          ->run();
+      }
+      else {
+        exec('curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE', $output);
+        $version = array_shift($output);
+        $this->taskExec("curl -s http://chromedriver.storage.googleapis.com/{$version}/chromedriver_linux64.zip > chromedriver_linux64.zip")
+          ->run();
+        $this->taskExec('unzip chromedriver_linux64.zip')
+          ->run();
+        $this->taskFilesystemStack()
+          ->rename('chromedriver', 'vendor/bin/chromedriver')
+          ->run();
+        $this->taskFilesystemStack()
+          ->remove('chromedriver_linux64.zip')
+          ->run();
+      }
+    }
   }
 
   /**
