@@ -352,6 +352,11 @@ class Tasks extends \Robo\Tasks
           ->run();
       }
     }
+
+    // Now run selenium standalone, which relies on chromedriver.
+    $this->taskExec('vendor/bin/selenium-server-standalone -port 4444')
+      ->background()
+      ->run();
   }
 
   /**
