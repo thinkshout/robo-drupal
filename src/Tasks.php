@@ -339,16 +339,14 @@ class Tasks extends \Robo\Tasks
   function setUpBehat() {
     // Ensure that this system has headless Chrome.
     if (!$this->taskExec('which chromedriver')->run()->wasSuccessful()) {
-      exec('uname', $output);
-      $os = array_shift($output);
+      $os = exec('uname');
       // Here we assume either OS X (a dev's env) or not (a CI env).
-      if ($os === 'Darwin') {
+      if ($os == 'Darwin') {
         $this->taskExec('brew install chromedriver')
           ->run();
       }
       else {
-        exec('curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE', $output);
-        $version = array_shift($output);
+        $version = exec('curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE');
         $this->taskExec("curl -s http://chromedriver.storage.googleapis.com/{$version}/chromedriver_linux64.zip > chromedriver_linux64.zip")
           ->run();
         $this->taskExec('unzip chromedriver_linux64.zip')
@@ -363,7 +361,7 @@ class Tasks extends \Robo\Tasks
     }
 
     // Now run selenium standalone, which relies on chromedriver.
-    $this->taskExec('vendor/bin/selenium-server-standalone -port 4444')
+    $this->taskExec('vendor/bin/selenium-server-standalone -port 4444 -log > /dev/null 2>&1')
       ->background()
       ->run();
   }
