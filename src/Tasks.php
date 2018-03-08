@@ -8,6 +8,11 @@ use Symfony\Component\Process\Process;
 class Tasks extends \Robo\Tasks
 {
 
+  // The version of this project used in setUpBehat(). Will be downloaded from
+  // https://docs.seleniumhq.org/download/. Must be compatible with
+  // chromedriver.
+  const SELENIUM_SERVER_STANDALONE_VERSION = '3.10.0';
+
   private $projectProperties;
 
   function __construct() {
@@ -347,7 +352,7 @@ class Tasks extends \Robo\Tasks
       }
       else {
         $version = exec('curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE');
-        $this->taskExec("curl -s http://chromedriver.storage.googleapis.com/{$version}/chromedriver_linux64.zip > chromedriver_linux64.zip")
+        $this->taskExec("wget http://chromedriver.storage.googleapis.com/{$version}/chromedriver_linux64.zip")
           ->run();
         $this->taskExec('unzip chromedriver_linux64.zip')
           ->run();
@@ -360,8 +365,28 @@ class Tasks extends \Robo\Tasks
       }
     }
 
-    // Now run selenium standalone, which relies on chromedriver.
-    $this->taskExec('vendor/bin/selenium-server-standalone -port 4444 -log > /dev/null 2>&1')
+    // Be sure we've got the copy of Selenium Server Standalone we need.
+    $sss_ver = self::SELENIUM_SERVER_STANDALONE_VERSION; // Copied because it's a pain to type. Also read.
+    $sss_file = "selenium-server-standalone-{$sss_ver}.jar";
+    $got_sss = $this
+      ->taskExec("ls behat/selenium/{$sss_file}")
+      ->run()
+      ->wasSuccessful();
+    if (!$got_sss) {
+      $subdir = substr($sss_ver, 0, strrpos($sss_ver, '.'));
+      $this
+        ->taskExec("wget http://selenium-release.storage.googleapis.com/{$subdir}/$sss_file")
+        ->run();
+      $this->taskFilesystemStack()
+        ->mkdir('behat/selenium')
+        ->run();
+      $this->taskFilesystemStack()
+        ->rename($sss_file, "behat/selenium/$sss_file")
+        ->run();
+    }
+
+    // Now run SSS, which relies on chromedriver.
+    $this->taskExec("java -jar behat/selenium/$sss_file -port 4444 >/dev/null 2>&1")
       ->background()
       ->run();
   }
