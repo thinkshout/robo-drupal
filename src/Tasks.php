@@ -386,7 +386,7 @@ class Tasks extends \Robo\Tasks
     }
 
     // Now run SSS, which relies on chromedriver.
-    $this->taskExec("java -jar behat/selenium/$sss_file -port 4444 >/dev/null 2>&1")
+    $this->taskExec("java -jar behat/selenium/$sss_file -port 4444")
       ->background()
       ->run();
   }
