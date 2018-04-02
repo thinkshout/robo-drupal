@@ -192,16 +192,6 @@ class Tasks extends \Robo\Tasks
       ->checkout($branch)
       ->run();
 
-    // Discard any local changes made to the github repo during install.
-    // We only do this on Circle because if we do it on our local, it might
-    // discard our changes.
-    if(getenv('CIRCLECI')) {
-      $this->taskGitStack()
-        ->stopOnFail()
-        ->checkout($branch)
-        ->run();
-    }
-
     // Get the last commit from the remote branch.
     $last_remote_commit = $this->taskExec('git --no-pager log -1 --date=short --pretty=format:%ci')
       ->dir("$tmpDir/$hostDirName")
