@@ -247,6 +247,7 @@ class Tasks extends \Robo\Tasks
     // Use user environment settings if we have them.
     if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
       $settings = json_decode($system_defaults, TRUE);
+      $admin_name = $this->projectProperties['admin_name'];
       $db_settings = $settings['databases']['default']['default'];
       $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] .
         ' --db-url=mysql://' . $db_settings['username'] .
@@ -254,7 +255,7 @@ class Tasks extends \Robo\Tasks
         '@' . $db_settings['host'] .
         ':' . $db_settings['port'] .
         '/' . $db_settings['database'] .
-        ' -y';
+        ' -y  --account-name=' . $admin_name;
     }
     else {
       $install_cmd = 'site-install standard -y';
@@ -383,7 +384,8 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function pantheonInstall() {
-    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' -y';
+    $admin_name = $this->projectProperties['admin_name'];
+    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' --account-name=' . $admin_name . ' -y';
 
     $terminus_site_env = $this->getPantheonSiteEnv();
     $install_cmd = "terminus remote:drush $terminus_site_env -- $install_cmd";
@@ -447,7 +449,7 @@ EOF';
 
   protected function getProjectProperties() {
 
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard'];
+    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin'];
 
     $properties['working_dir'] = getcwd();
 
