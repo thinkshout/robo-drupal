@@ -466,10 +466,10 @@ class Tasks extends \Robo\Tasks
       $web_root = '';
     }
     $default_dir = 'code/' . $web_root . 'sites/default';
-    $sftp_command .= ' << chmod 755 ' . $default_dir . '
+    $sftp_command .= ' << EOF
+chmod 755 ' . $default_dir . '
 chmod 755 ' . $default_dir . '/settings.php';
-//    exec($sftp_command);
-    $this->_exec($sftp_command);
+    exec($sftp_command);
 
     // Run the installation.
     $result = $this->taskExec($install_cmd)
