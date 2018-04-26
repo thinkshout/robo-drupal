@@ -265,9 +265,9 @@ class Tasks extends \Robo\Tasks
       ->optimizeAutoloader()
       ->run();
 
-    $this->_chmod($this->projectProperties['web_root'] . '/sites/default', 0644);
+    $this->_chmod($this->projectProperties['web_root'] . '/sites/default', 0755);
     if (file_exists($this->projectProperties['web_root'] . '/sites/default/settings.php')) {
-      $this->_chmod($this->projectProperties['web_root'] . '/sites/default/settings.php', 0644);
+      $this->_chmod($this->projectProperties['web_root'] . '/sites/default/settings.php', 0755);
     }
 
     $install_cmd = 'drush ' . $install_cmd;
