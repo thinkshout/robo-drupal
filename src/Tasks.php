@@ -232,6 +232,7 @@ class Tasks extends \Robo\Tasks
       ->dir("$tmpDir/deploy")
       ->optimizeAutoloader()
       ->noDev()
+      ->preferDist()
       ->run();
 
     $this->taskGitStack()
