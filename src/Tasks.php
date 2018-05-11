@@ -8,6 +8,11 @@ use Symfony\Component\Process\Process;
 class Tasks extends \Robo\Tasks
 {
 
+  // The version of this project used in setUpBehat(). Will be downloaded from
+  // https://docs.seleniumhq.org/download/. Must be compatible with
+  // chromedriver.
+  const SELENIUM_SERVER_STANDALONE_VERSION = '3.10.0';
+
   private $projectProperties;
 
   function __construct() {
@@ -227,6 +232,7 @@ class Tasks extends \Robo\Tasks
       ->dir("$tmpDir/deploy")
       ->optimizeAutoloader()
       ->noDev()
+      ->preferDist()
       ->run();
 
     $this->taskGitStack()
@@ -247,6 +253,7 @@ class Tasks extends \Robo\Tasks
     // Use user environment settings if we have them.
     if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
       $settings = json_decode($system_defaults, TRUE);
+      $admin_name = $this->projectProperties['admin_name'];
       $db_settings = $settings['databases']['default']['default'];
       $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] .
         ' --db-url=mysql://' . $db_settings['username'] .
@@ -254,7 +261,7 @@ class Tasks extends \Robo\Tasks
         '@' . $db_settings['host'] .
         ':' . $db_settings['port'] .
         '/' . $db_settings['database'] .
-        ' -y';
+        ' -y  --account-name=' . $admin_name;
     }
     else {
       $install_cmd = 'site-install standard -y';
@@ -298,6 +305,8 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function test($opts = ['feature' => NULL, 'profile' => 'local']) {
+    $this->setUpBehat();
+
     $behat_cmd = $this->taskExec('behat')
       ->option('config', 'behat/behat.' . $opts['profile'] . '.yml')
       ->option('profile', $opts['profile'])
@@ -318,6 +327,60 @@ class Tasks extends \Robo\Tasks
 //
 //    // @TODO will need to address multiple results when we enable other tests as well.
 //    return $behat_result->merge($unit_result);
+  }
+
+  /**
+   * Ensure that the filesystem has everything Behat needs. At present, that's
+   * only chromedriver, AKA "Headless Chrome".
+   */
+  function setUpBehat() {
+    // Ensure that this system has headless Chrome.
+    if (!$this->taskExec('which chromedriver')->run()->wasSuccessful()) {
+      $os = exec('uname');
+      // Here we assume either OS X (a dev's env) or not (a CI env).
+      if ($os == 'Darwin') {
+        $this->taskExec('brew install chromedriver')
+          ->run();
+      }
+      else {
+        $version = exec('curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE');
+        $this->taskExec("wget http://chromedriver.storage.googleapis.com/{$version}/chromedriver_linux64.zip")
+          ->run();
+        $this->taskExec('unzip chromedriver_linux64.zip')
+          ->run();
+        $this->taskFilesystemStack()
+          ->rename('chromedriver', 'vendor/bin/chromedriver')
+          ->run();
+        $this->taskFilesystemStack()
+          ->remove('chromedriver_linux64.zip')
+          ->run();
+      }
+    }
+
+    // Be sure we've got the copy of Selenium Server Standalone we need.
+    $sss_ver = self::SELENIUM_SERVER_STANDALONE_VERSION; // Copied because it's a pain to type. Also read.
+    $sss_file = "selenium-server-standalone-{$sss_ver}.jar";
+    $got_sss = $this
+      ->taskExec("ls behat/selenium/{$sss_file}")
+      ->run()
+      ->wasSuccessful();
+    if (!$got_sss) {
+      $subdir = substr($sss_ver, 0, strrpos($sss_ver, '.'));
+      $this
+        ->taskExec("wget http://selenium-release.storage.googleapis.com/{$subdir}/$sss_file")
+        ->run();
+      $this->taskFilesystemStack()
+        ->mkdir('behat/selenium')
+        ->run();
+      $this->taskFilesystemStack()
+        ->rename($sss_file, "behat/selenium/$sss_file")
+        ->run();
+    }
+
+    // Now run SSS, which relies on chromedriver.
+    $this->taskExec("java -jar behat/selenium/$sss_file -port 4444")
+      ->background()
+      ->run();
   }
 
   /**
@@ -383,7 +446,8 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function pantheonInstall() {
-    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' -y';
+    $admin_name = $this->projectProperties['admin_name'];
+    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' --account-name=' . $admin_name . ' -y';
 
     $terminus_site_env = $this->getPantheonSiteEnv();
     $install_cmd = "terminus remote:drush $terminus_site_env -- $install_cmd";
@@ -450,7 +514,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
   protected function getProjectProperties() {
 
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard'];
+    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin'];
 
     $properties['working_dir'] = getcwd();
 
