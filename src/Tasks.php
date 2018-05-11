@@ -467,9 +467,13 @@ class Tasks extends \Robo\Tasks
       $web_root = '';
     }
     $default_dir = 'code/' . $web_root . 'sites/default';
+    // We use 755 instead of 644 so settings.php is executable, and the
+    // directory is stat-able (otherwise we can't chmod the php file)
     $sftp_command .= ' << EOF
 chmod 755 ' . $default_dir . '
 chmod 755 ' . $default_dir . '/settings.php';
+    // Note that we don't use $this->_exec on purpose. SFTP command fails
+    // with that operation: a fix would be great but this actually works.
     exec($sftp_command);
 
     // Run the installation.
