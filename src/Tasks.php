@@ -62,12 +62,14 @@ class Tasks extends \Robo\Tasks
   /**
    * Generate configuration in your .env file.
    *
-   * @option string db-pass Database password.
-   * @option string db-user Database user.
-   * @option string db-name Database name.
-   * @option string db-host Database host.
-   * @option string branch Branch.
-   * @option string profile install profile.
+   * @option array $opts Contains the following key options:
+   *   db-pass:    Database password.
+   *   db-user:    Database user.
+   *   db-name:    Database name.
+   *   db-host:    Database host.
+   *   branch:     Git Branch.
+   *   profile:    install profile.
+   *   db-upgrade: local migration database name.
    */
   function configure($opts = [
     'db-pass' => NULL,
@@ -76,6 +78,7 @@ class Tasks extends \Robo\Tasks
     'db-host' => NULL,
     'branch' => NULL,
     'profile' => 'standard',
+    'db-upgrade' => NULL,
   ]) {
 
     $settings = $this->getDefaultPressflowSettings();
@@ -113,6 +116,12 @@ class Tasks extends \Robo\Tasks
     // Override DB host from project properties.
     if (isset($this->projectProperties['db-host'])) {
       $settings['databases']['default']['default']['host'] = $this->projectProperties['db-host'];
+    }
+
+    // Set Upgrade database.
+    if (isset($this->projectProperties['db-upgrade']) && $this->projectProperties['db-upgrade'] != $this->projectProperties['db-name']) {
+      $settings['databases']['upgrade'] = $settings['databases']['default'];
+      $settings['databases']['upgrade']['default']['database'] = $this->projectProperties['db-upgrade'];
     }
 
     // Hash Salt.
