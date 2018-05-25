@@ -317,7 +317,7 @@ class Tasks extends \Robo\Tasks
    *
    * @return \Robo\Result
    */
-  function test($opts = ['feature' => NULL, 'profile' => 'local']) {
+  function test($opts = ['feature' => NULL, 'profile' => 'local', 'tags' => NULL]) {
     $this->setUpBehat();
 
     $behat_cmd = $this->taskExec('behat')
@@ -327,6 +327,10 @@ class Tasks extends \Robo\Tasks
 
     if ($opts['feature']) {
       $behat_cmd->rawArg($opts['feature']);
+    }
+
+    if ($opts['tags']) {
+      $behat_cmd->option('tags', $opts['tags']);
     }
 
     $behat_result = $behat_cmd->run();
