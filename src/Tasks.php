@@ -8,6 +8,11 @@ use Symfony\Component\Process\Process;
 class Tasks extends \Robo\Tasks
 {
 
+  // The version of this project used in setUpBehat(). Will be downloaded from
+  // https://docs.seleniumhq.org/download/. Must be compatible with
+  // chromedriver.
+  const SELENIUM_SERVER_STANDALONE_VERSION = '3.10.0';
+
   private $projectProperties;
 
   function __construct() {
@@ -57,12 +62,14 @@ class Tasks extends \Robo\Tasks
   /**
    * Generate configuration in your .env file.
    *
-   * @option string db-pass Database password.
-   * @option string db-user Database user.
-   * @option string db-name Database name.
-   * @option string db-host Database host.
-   * @option string branch Branch.
-   * @option string profile install profile.
+   * @option array $opts Contains the following key options:
+   *   db-pass:    Database password.
+   *   db-user:    Database user.
+   *   db-name:    Database name.
+   *   db-host:    Database host.
+   *   branch:     Git Branch.
+   *   profile:    install profile.
+   *   db-upgrade: local migration database name.
    */
   function configure($opts = [
     'db-pass' => NULL,
@@ -71,6 +78,7 @@ class Tasks extends \Robo\Tasks
     'db-host' => NULL,
     'branch' => NULL,
     'profile' => 'standard',
+    'db-upgrade' => NULL,
   ]) {
 
     $settings = $this->getDefaultPressflowSettings();
@@ -108,6 +116,12 @@ class Tasks extends \Robo\Tasks
     // Override DB host from project properties.
     if (isset($this->projectProperties['db-host'])) {
       $settings['databases']['default']['default']['host'] = $this->projectProperties['db-host'];
+    }
+
+    // Set Upgrade database.
+    if (isset($this->projectProperties['db-upgrade']) && $this->projectProperties['db-upgrade'] != $this->projectProperties['db-name']) {
+      $settings['databases']['upgrade'] = $settings['databases']['default'];
+      $settings['databases']['upgrade']['default']['database'] = $this->projectProperties['db-upgrade'];
     }
 
     // Hash Salt.
@@ -227,6 +241,7 @@ class Tasks extends \Robo\Tasks
       ->dir("$tmpDir/deploy")
       ->optimizeAutoloader()
       ->noDev()
+      ->preferDist()
       ->run();
 
     $this->taskGitStack()
@@ -247,6 +262,7 @@ class Tasks extends \Robo\Tasks
     // Use user environment settings if we have them.
     if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
       $settings = json_decode($system_defaults, TRUE);
+      $admin_name = $this->projectProperties['admin_name'];
       $db_settings = $settings['databases']['default']['default'];
       $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] .
         ' --db-url=mysql://' . $db_settings['username'] .
@@ -254,7 +270,7 @@ class Tasks extends \Robo\Tasks
         '@' . $db_settings['host'] .
         ':' . $db_settings['port'] .
         '/' . $db_settings['database'] .
-        ' -y';
+        ' -y  --account-name=' . $admin_name;
     }
     else {
       $install_cmd = 'site-install standard -y';
@@ -302,6 +318,8 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function test($opts = ['feature' => NULL, 'profile' => 'local']) {
+    $this->setUpBehat();
+
     $behat_cmd = $this->taskExec('behat')
       ->option('config', 'behat/behat.' . $opts['profile'] . '.yml')
       ->option('profile', $opts['profile'])
@@ -322,6 +340,60 @@ class Tasks extends \Robo\Tasks
 //
 //    // @TODO will need to address multiple results when we enable other tests as well.
 //    return $behat_result->merge($unit_result);
+  }
+
+  /**
+   * Ensure that the filesystem has everything Behat needs. At present, that's
+   * only chromedriver, AKA "Headless Chrome".
+   */
+  function setUpBehat() {
+    // Ensure that this system has headless Chrome.
+    if (!$this->taskExec('which chromedriver')->run()->wasSuccessful()) {
+      $os = exec('uname');
+      // Here we assume either OS X (a dev's env) or not (a CI env).
+      if ($os == 'Darwin') {
+        $this->taskExec('brew install chromedriver')
+          ->run();
+      }
+      else {
+        $version = exec('curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE');
+        $this->taskExec("wget http://chromedriver.storage.googleapis.com/{$version}/chromedriver_linux64.zip")
+          ->run();
+        $this->taskExec('unzip chromedriver_linux64.zip')
+          ->run();
+        $this->taskFilesystemStack()
+          ->rename('chromedriver', 'vendor/bin/chromedriver')
+          ->run();
+        $this->taskFilesystemStack()
+          ->remove('chromedriver_linux64.zip')
+          ->run();
+      }
+    }
+
+    // Be sure we've got the copy of Selenium Server Standalone we need.
+    $sss_ver = self::SELENIUM_SERVER_STANDALONE_VERSION; // Copied because it's a pain to type. Also read.
+    $sss_file = "selenium-server-standalone-{$sss_ver}.jar";
+    $got_sss = $this
+      ->taskExec("ls behat/selenium/{$sss_file}")
+      ->run()
+      ->wasSuccessful();
+    if (!$got_sss) {
+      $subdir = substr($sss_ver, 0, strrpos($sss_ver, '.'));
+      $this
+        ->taskExec("wget http://selenium-release.storage.googleapis.com/{$subdir}/$sss_file")
+        ->run();
+      $this->taskFilesystemStack()
+        ->mkdir('behat/selenium')
+        ->run();
+      $this->taskFilesystemStack()
+        ->rename($sss_file, "behat/selenium/$sss_file")
+        ->run();
+    }
+
+    // Now run SSS, which relies on chromedriver.
+    $this->taskExec("java -jar behat/selenium/$sss_file -port 4444")
+      ->background()
+      ->run();
   }
 
   /**
@@ -387,7 +459,8 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function pantheonInstall() {
-    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' -y';
+    $admin_name = $this->projectProperties['admin_name'];
+    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' --account-name=' . $admin_name . ' -y';
 
     $terminus_site_env = $this->getPantheonSiteEnv();
     $install_cmd = "terminus remote:drush $terminus_site_env -- $install_cmd";
@@ -396,7 +469,7 @@ class Tasks extends \Robo\Tasks
 
     // Even in SFTP mode, the settings.php file might have too restrictive
     // permissions. We use SFTP to chmod the settings file before installing.
-    $sftp_command = trim($this->_exec("terminus connection:info --field=sftp_command $terminus_site_env")->getMessage());
+    $sftp_command = trim(exec("terminus connection:info --field=sftp_command $terminus_site_env"));
     $sftp_command = str_replace('sftp', 'sftp -b -', $sftp_command);
     // Use webroot to find settings.php assume  webroot is the gitroot if no
     // webroot is specified.
@@ -407,11 +480,14 @@ class Tasks extends \Robo\Tasks
       $web_root = '';
     }
     $default_dir = 'code/' . $web_root . 'sites/default';
+    // We use 755 instead of 644 so settings.php is executable, and the
+    // directory is stat-able (otherwise we can't chmod the php file)
     $sftp_command .= ' << EOF
-chmod 644 ' . $default_dir . '
-chmod 644 ' . $default_dir . '/settings.php
-EOF';
-    $this->_exec($sftp_command);
+chmod 755 ' . $default_dir . '
+chmod 755 ' . $default_dir . '/settings.php';
+    // Note that we don't use $this->_exec on purpose. SFTP command fails
+    // with that operation: a fix would be great but this actually works.
+    exec($sftp_command);
 
     // Run the installation.
     $result = $this->taskExec($install_cmd)
@@ -451,7 +527,7 @@ EOF';
 
   protected function getProjectProperties() {
 
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard'];
+    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin'];
 
     $properties['working_dir'] = getcwd();
 
