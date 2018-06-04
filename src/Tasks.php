@@ -281,7 +281,11 @@ class Tasks extends \Robo\Tasks
       ->optimizeAutoloader()
       ->run();
 
-    $this->_chmod($this->projectProperties['web_root'] . '/sites/default/settings.php', 0755);
+    $this->_chmod($this->projectProperties['web_root'] . '/sites/default', 0755);
+    if (file_exists($this->projectProperties['web_root'] . '/sites/default/settings.php')) {
+      $this->_chmod($this->projectProperties['web_root'] . '/sites/default/settings.php', 0755);
+    }
+
     $install_cmd = 'drush ' . $install_cmd;
 
     // Run the installation.
@@ -313,7 +317,7 @@ class Tasks extends \Robo\Tasks
    *
    * @return \Robo\Result
    */
-  function test($opts = ['feature' => NULL, 'profile' => 'local']) {
+  function test($opts = ['feature' => NULL, 'profile' => 'local', 'tags' => NULL]) {
     $this->setUpBehat();
 
     $behat_cmd = $this->taskExec('behat')
@@ -323,6 +327,10 @@ class Tasks extends \Robo\Tasks
 
     if ($opts['feature']) {
       $behat_cmd->rawArg($opts['feature']);
+    }
+
+    if ($opts['tags']) {
+      $behat_cmd->option('tags', $opts['tags']);
     }
 
     $behat_result = $behat_cmd->run();
