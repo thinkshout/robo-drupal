@@ -500,7 +500,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
   protected function getProjectProperties() {
 
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin'];
+    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin', 'database_of_truth' => 'database_of_truth'];
 
     $properties['working_dir'] = getcwd();
 
@@ -691,6 +691,60 @@ chmod 755 ' . $default_dir . '/settings.php';
       // Run the installation.
       $result = $this->taskExec(implode(' && ', $drush_commands))
         ->run();
+    }
+  }
+
+  /**
+   * Pull the config from the live site down to your local.
+   *
+   * Run this command from a branch based off the last release tag on github.
+   * For example:
+   *   git checkout my_last_release
+   *   git checkout -b this_release_date
+   *   robo pull:config
+   *   git commit .
+   *   git push
+   *
+   * Afterwards, make a PR against master for these changes and merge them.
+   * Do this BEFORE merging develop into master.
+   */
+  public function pullConfig() {
+    $project_properties = $this->getProjectProperties();
+    if (!isset($project_properties['database_of_truth'])) {
+      $this->say('No source database configured. To use this command, you must add a TS_DATABASE_OF_TRUTH value to your .env file. Example: TS_DATABASE_OF_TRUTH=live');
+      return FALSE;
+    }
+
+    $drush_commands = [
+      'drush_grab_database' => 'drush sql-drop -y @self && drush  sql-sync @pantheon.' . $project_properties['project'] . '.' . $project_properties['database_of_truth'] . ' @self -y',
+    ];
+    $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
+    if ($database_download->wasSuccessful()) {
+      $do_composer_install = TRUE;
+    }
+    else {
+      $do_composer_install = FALSE;
+      $this->yell('Remote database sync failed. Please run `robo pull:config` again.');
+    }
+    if ($do_composer_install) {
+      $this->taskComposerInstall()
+        ->optimizeAutoloader()
+        ->run();
+      $drush_commands = [
+        'drush_clear_cache_again' => 'drush cr',
+        'drush_grab_config_changes' => 'drush config-export -y',
+      ];
+      $this->taskExec(implode(' && ', $drush_commands))
+        ->dir($project_properties['web_root'])
+        ->run();
+
+      // Ignore config-local changes -- the $database_of_truth site doesn't know about them.
+      $this->taskGitStack()
+        ->stopOnFail()
+        ->checkout('config-local')
+        ->run();
+
+      $this->yell('"'. $project_properties['database_of_truth'] . '" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
     }
   }
 }
