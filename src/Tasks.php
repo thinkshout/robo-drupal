@@ -665,4 +665,32 @@ chmod 755 ' . $default_dir . '/settings.php';
     return $textToDelete;
   }
 
+  /**
+   * Clean up state of Pantheon dev & develop environments after deploying.
+   *
+   * Run this by adding the line:
+   * robo post:deploy
+   *
+   * right after this line:
+   * robo pantheon:deploy --y
+   *
+   * in your .circleci/config.yml file.
+   */
+  public function postDeploy() {
+    $terminus_site_env = $this->getPantheonSiteEnv();
+    $project_properties = $this->getProjectProperties();
+    $pantheon_prefix = $project_properties['project'];
+    if ($terminus_site_env == $pantheon_prefix . '.develop' || $terminus_site_env == $pantheon_prefix . '.dev') {
+      $drush_commands = [
+        'drush_partial_config_import' => "terminus remote:drush $terminus_site_env -- config-import --partial -y",
+        'drush_cache_clear' => "terminus remote:drush $terminus_site_env -- cr",
+        'drush_entity_updates' => "terminus remote:drush $terminus_site_env -- entity-updates -y",
+        'drush_update_database' => "terminus remote:drush $terminus_site_env -- updb -y",
+        'drush_full_config_import' => "terminus remote:drush $terminus_site_env -- config-import -y",
+      ];
+      // Run the installation.
+      $result = $this->taskExec(implode(' && ', $drush_commands))
+        ->run();
+    }
+  }
 }
