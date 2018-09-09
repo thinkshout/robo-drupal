@@ -840,6 +840,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   If the remote database was reached and downloaded, return TRUE.
    */
   protected function getDatabaseOfTruth() {
+    $current_command = $this->input()->getArgument('command');
     $project_properties = $this->getProjectProperties();
     if (!isset($project_properties['database_of_truth'])) {
       $this->say('No source database configured. To use this command, you must add a TS_DATABASE_OF_TRUTH value to your .env file. Example: TS_DATABASE_OF_TRUTH=live');
@@ -854,7 +855,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       return TRUE;
     }
     else {
-      $this->yell('Remote database sync failed. Please run robo install again.');
+      $this->yell('Remote database sync failed. Please run `robo ' . $current_command . '`` again.');
       return FALSE;
     }
   }
