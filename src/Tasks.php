@@ -862,7 +862,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    * @return bool
    *   If the remote database was reached and downloaded, return TRUE.
    */
-  protected function getDatabaseOfTruth() {
+  private function getDatabaseOfTruth() {
     $current_command = $this->input()->getArgument('command');
     $project_properties = $this->getProjectProperties();
     if (!$this->databaseSourceOfTruth()) {
