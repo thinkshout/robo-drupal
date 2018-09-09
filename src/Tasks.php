@@ -276,10 +276,9 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function install() {
-    $project_properties = $this->getProjectProperties();
     if(getenv('CIRCLECI')) {
       // Do nothing custom here.
-      $this->trueFreshInstall();
+      return $this->trueFreshInstall();
     }
     elseif ($this->databaseSourceOfTruth()) {
       $this->prepareLocal();
