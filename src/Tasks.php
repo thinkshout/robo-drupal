@@ -23,6 +23,16 @@ abstract class Tasks extends \Robo\Tasks
   abstract protected function databaseSourceOfTruth();
 
   /**
+   * Determines the migration folder to pull config from.
+   *
+   * @return mixed
+   *   Return the path to the folder from the Drupal root
+   *   (example: 'modules/custom/my_migration/config/install'), or FALSE if you
+   *   are running no ongoing migrations.
+   */
+  abstract protected function migrationSourceFolder();
+
+  /**
    * Initialize the project for the first time.
    *
    * @return \Robo\Result
@@ -866,6 +876,32 @@ chmod 755 ' . $default_dir . '/settings.php';
     }
     else {
       $this->yell('Remote database sync failed. Please run `robo ' . $current_command . '` again.');
+      return FALSE;
+    }
+  }
+
+  /**
+   * Cleanup migrations.
+   *
+   * @option string migrations
+   *   Optional list of migrations to reset, separated by commmas.
+   */
+  public function migrateCleanup($opts = ['migrations' => '']) {
+    if ($this->migrationSourceFolder()) {
+      $migrations = explode(',', $opts['migrations']);
+      $project_properties = $this->getProjectProperties();
+      foreach ($migrations as $migration) {
+        $this->taskExec('drush mrs ' . $migration)
+          ->dir($project_properties['web_root'])
+          ->run();
+      }
+      $this->taskExec('drush mr --all && drush cim --partial --source=' . $this->migrationSourceFolder() . ' -y && drush ms')
+        ->dir($project_properties['web_root'])
+        ->run();
+    }
+    else {
+      $this->say('No migration source folder configured.');
+      $this->say('To use this command, you must implement the migrationSourceFolder() method in your project RoboFile.php.');
       return FALSE;
     }
   }
