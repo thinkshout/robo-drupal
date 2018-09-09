@@ -730,22 +730,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    */
   public function pullConfig() {
     $project_properties = $this->getProjectProperties();
-    if (!isset($project_properties['database_of_truth'])) {
-      $this->say('No source database configured. To use this command, you must add a TS_DATABASE_OF_TRUTH value to your .env file. Example: TS_DATABASE_OF_TRUTH=live');
-      return FALSE;
-    }
-
-    $drush_commands = [
-      'drush_grab_database' => 'drush sql-drop -y @self && drush  sql-sync @pantheon.' . $project_properties['project'] . '.' . $project_properties['database_of_truth'] . ' @self -y',
-    ];
-    $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
-    if ($database_download->wasSuccessful()) {
-      $do_composer_install = TRUE;
-    }
-    else {
-      $do_composer_install = FALSE;
-      $this->yell('Remote database sync failed. Please run `robo pull:config` again.');
-    }
+    $do_composer_install = $this->getDatabaseOfTruth();
     if ($do_composer_install) {
       $this->taskComposerInstall()
         ->optimizeAutoloader()
@@ -775,26 +760,11 @@ chmod 755 ' . $default_dir . '/settings.php';
    * and enables local development modules, including config suite.
    */
   public function prepareLocal() {
-    $project_properties = $this->getProjectProperties();
-    if (!isset($project_properties['database_of_truth'])) {
-      $this->say('No source database configured. To use this command, you must add a TS_DATABASE_OF_TRUTH value to your .env file. Example: TS_DATABASE_OF_TRUTH=live');
-      return FALSE;
-    }
     $do_composer_install = TRUE;
     $project_properties = $this->getProjectProperties();
     $grab_database = $this->confirm("Grab a fresh database?");
     if ($grab_database == 'y') {
-      $do_composer_install = FALSE;
-      $drush_commands = [
-        'drush_grab_database' => 'drush sql-drop -y @self && drush  sql-sync @pantheon.' . $project_properties['project'] . '.' . $project_properties['database_of_truth'] . '@self -y',
-      ];
-      $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
-      if ($database_download->wasSuccessful()) {
-        $do_composer_install = TRUE;
-      }
-      else {
-        $this->yell('Remote database sync failed. Please run robo install again.');
-      }
+      $do_composer_install = $this->getDatabaseOfTruth();
     }
     if ($do_composer_install) {
       $this->taskComposerInstall()
@@ -860,6 +830,32 @@ chmod 755 ' . $default_dir . '/settings.php';
         $query->dir($project_properties['web_root']);
       }
       $query->run();
+    }
+  }
+
+  /**
+   * Helper function to pull the database of truth to your local machine.
+   *
+   * @return bool
+   *   If the remote database was reached and downloaded, return TRUE.
+   */
+  protected function getDatabaseOfTruth() {
+    $project_properties = $this->getProjectProperties();
+    if (!isset($project_properties['database_of_truth'])) {
+      $this->say('No source database configured. To use this command, you must add a TS_DATABASE_OF_TRUTH value to your .env file. Example: TS_DATABASE_OF_TRUTH=live');
+      return FALSE;
+    }
+
+    $drush_commands = [
+      'drush_grab_database' => 'drush sql-drop -y @self && drush sql-sync @pantheon.' . $project_properties['project'] . '.' . $project_properties['database_of_truth'] . ' @self -y',
+    ];
+    $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
+    if ($database_download->wasSuccessful()) {
+      return TRUE;
+    }
+    else {
+      $this->yell('Remote database sync failed. Please run robo install again.');
+      return FALSE;
     }
   }
 }
