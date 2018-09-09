@@ -520,7 +520,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
   protected function getProjectProperties() {
 
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin', 'database_of_truth' => 'database_of_truth'];
+    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin', 'database_of_truth' => NULL];
 
     $properties['working_dir'] = getcwd();
 
@@ -855,7 +855,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       return TRUE;
     }
     else {
-      $this->yell('Remote database sync failed. Please run `robo ' . $current_command . '`` again.');
+      $this->yell('Remote database sync failed. Please run `robo ' . $current_command . '` again.');
       return FALSE;
     }
   }
