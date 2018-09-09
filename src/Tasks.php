@@ -20,7 +20,7 @@ class Tasks extends \Robo\Tasks
    *   Return the Pantheon environment you want to pull in on install (live,
    *   dev, etc), or FALSE to install from scratch.
    */
-  private function databaseSourceOfTruth() {
+  protected function databaseSourceOfTruth() {
     return 'live';
   }
 
@@ -32,7 +32,7 @@ class Tasks extends \Robo\Tasks
    *   (example: 'modules/custom/my_migration/config/install'), or FALSE if you
    *   are running no ongoing migrations.
    */
-  private function migrationSourceFolder() {
+  protected function migrationSourceFolder() {
     return FALSE;
   }
 
