@@ -5,7 +5,7 @@ namespace ThinkShout\RoboDrupal;
 use Drupal\Component\Utility\Crypt;
 use Symfony\Component\Process\Process;
 
-abstract class Tasks extends \Robo\Tasks
+class Tasks extends \Robo\Tasks
 {
   private $projectProperties;
 
@@ -20,7 +20,9 @@ abstract class Tasks extends \Robo\Tasks
    *   Return the Pantheon environment you want to pull in on install (live,
    *   dev, etc), or FALSE to install from scratch.
    */
-  abstract protected function databaseSourceOfTruth();
+  private function databaseSourceOfTruth() {
+    return 'live';
+  }
 
   /**
    * Determines the migration folder to pull config from.
@@ -30,7 +32,9 @@ abstract class Tasks extends \Robo\Tasks
    *   (example: 'modules/custom/my_migration/config/install'), or FALSE if you
    *   are running no ongoing migrations.
    */
-  abstract protected function migrationSourceFolder();
+  private function migrationSourceFolder() {
+    return FALSE;
+  }
 
   /**
    * Initialize the project for the first time.
