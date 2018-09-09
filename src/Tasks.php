@@ -901,7 +901,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     }
     else {
       $this->say('No migration source folder configured.');
-      $this->say('To use this command, you must implement the migrationSourceFolder() method in your project RoboFile.php.');
+      $this->say('To use this command, you must return a folder path string within the migrationSourceFolder() method in your project RoboFile.php.');
       return FALSE;
     }
   }
