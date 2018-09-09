@@ -253,6 +253,26 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function install() {
+    $project_properties = $this->getProjectProperties();
+    if(getenv('CIRCLECI')) {
+      // Do nothing custom here.
+      $this->trueFreshInstall();
+    }
+    elseif (isset($project_properties['database_of_truth'])) {
+      $this->prepareLocal();
+    }
+    else {
+      $this->trueFreshInstall();
+      $this->postInstall();
+    }
+  }
+
+  /**
+   * Install or re-install the Drupal site.
+   *
+   * @return \Robo\Result
+   */
+  private function trueFreshInstall() {
     // Use user environment settings if we have them.
     if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
       $settings = json_decode($system_defaults, TRUE);
@@ -790,6 +810,56 @@ chmod 755 ' . $default_dir . '/settings.php';
       $this->taskExec(implode(' && ', $drush_commands))
         ->dir($project_properties['web_root'])
         ->run();
+    }
+  }
+
+  /**
+   * Prepare a freshly-installed site with some dummy data for site editors.
+   *
+   * This is sample code, not intended to be used as-is, but intended to be
+   * implemented in your RoboFile.php. It's not an abstract function, because
+   * its implementation shouldn't be required, and I wanted to add sample code.
+   */
+  public function postInstall() {
+    // Sample method code with instructions for use.
+    $this->say("The post:install command should be customized per project. Copy the postInstall() method from the `/vendor/robo-drupal/src/Tasks.php` folder into your RoboFile.php file and alter it to suit your needs.");
+    return TRUE;
+
+    // Code you'll want to use starts below.
+    $terminus_site_env = $this->getPantheonSiteEnv();
+    $project_properties = $this->getProjectProperties();
+    $pantheon_prefix = $project_properties['project'];
+    $needs_directory = FALSE;
+    // These are the remote domains we want to run the migration on.
+    $install_domains = [
+      $pantheon_prefix . '.develop',
+      $pantheon_prefix . '.dev',
+    ];
+
+    if ((in_array($terminus_site_env, $install_domains)) && getenv('CIRCLECI')) {
+      $cmd_prefix = "terminus remote:drush $terminus_site_env --";
+      $needs_directory = FALSE;
+    }
+    elseif (!getenv('CIRCLECI')) {
+      $cmd_prefix = "drush";
+      $needs_directory = TRUE;
+    }
+    if (!isset($cmd_prefix)) {
+      return;
+    }
+    if (in_array($terminus_site_env, $install_domains)) {
+      $drush_commands = [
+        'wake_old_multidev' => "terminus env:wake wfw8.d7database",
+        'drush_create_admin' => "$cmd_prefix ucrt admin@test.org --mail=admin@test.org --password=admin",
+        'drush_assign_admin' => "$cmd_prefix urol administrator --mail=admin@test.org",
+        'drush_migrate_prep' => "$cmd_prefix mim --group=migrate_drupal_7 --limit=50",
+      ];
+      // Run the commands you listed.
+      $query = $this->taskExec(implode(' && ', $drush_commands));
+      if ($needs_directory) {
+        $query->dir($project_properties['web_root']);
+      }
+      $query->run();
     }
   }
 }
