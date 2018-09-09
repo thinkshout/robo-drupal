@@ -867,7 +867,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     $project_properties = $this->getProjectProperties();
     if (!$this->databaseSourceOfTruth()) {
       $this->say('No source database configured.');
-      $this->say('To use this command, you must a string from the databaseSourceOfTruth() method in your project RoboFile.php.');
+      $this->say('To use this command, you must return a string from the databaseSourceOfTruth() method in your project RoboFile.php.');
       return FALSE;
     }
 
