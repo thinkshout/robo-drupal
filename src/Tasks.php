@@ -5,13 +5,22 @@ namespace ThinkShout\RoboDrupal;
 use Drupal\Component\Utility\Crypt;
 use Symfony\Component\Process\Process;
 
-class Tasks extends \Robo\Tasks
+abstract class Tasks extends \Robo\Tasks
 {
   private $projectProperties;
 
   function __construct() {
     $this->projectProperties = $this->getProjectProperties();
   }
+
+  /**
+   * Determines the database to start from when doing new work on this project.
+   *
+   * @return mixed
+   *   Return the Pantheon environment you want to pull in on install (live,
+   *   dev, etc), or FALSE to install from scratch.
+   */
+  abstract protected function databaseSourceOfTruth();
 
   /**
    * Initialize the project for the first time.
@@ -258,7 +267,7 @@ class Tasks extends \Robo\Tasks
       // Do nothing custom here.
       $this->trueFreshInstall();
     }
-    elseif (isset($project_properties['database_of_truth'])) {
+    elseif ($this->databaseSourceOfTruth()) {
       $this->prepareLocal();
     }
     else {
@@ -520,7 +529,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
   protected function getProjectProperties() {
 
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin', 'database_of_truth' => NULL];
+    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin'];
 
     $properties['working_dir'] = getcwd();
 
@@ -749,7 +758,7 @@ chmod 755 ' . $default_dir . '/settings.php';
         ->checkout('config-local')
         ->run();
 
-      $this->yell('"'. $project_properties['database_of_truth'] . '" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
+      $this->yell('"'. $this->databaseSourceOfTruth() . '" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
     }
   }
 
@@ -842,13 +851,14 @@ chmod 755 ' . $default_dir . '/settings.php';
   protected function getDatabaseOfTruth() {
     $current_command = $this->input()->getArgument('command');
     $project_properties = $this->getProjectProperties();
-    if (!isset($project_properties['database_of_truth'])) {
-      $this->say('No source database configured. To use this command, you must add a TS_DATABASE_OF_TRUTH value to your .env file. Example: TS_DATABASE_OF_TRUTH=live');
+    if ($this->databaseSourceOfTruth()) {
+      $this->say('No source database configured.');
+      $this->say('To use this command, you must implement the databaseSourceOfTruth() method in your project RoboFile.php.');
       return FALSE;
     }
 
     $drush_commands = [
-      'drush_grab_database' => 'drush sql-drop -y @self && drush sql-sync @pantheon.' . $project_properties['project'] . '.' . $project_properties['database_of_truth'] . ' @self -y',
+      'drush_grab_database' => 'drush sql-drop -y @self && drush sql-sync @pantheon.' . $project_properties['project'] . '.' . $this->databaseSourceOfTruth() . ' @self -y',
     ];
     $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
     if ($database_download->wasSuccessful()) {
