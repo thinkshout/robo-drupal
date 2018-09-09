@@ -747,4 +747,49 @@ chmod 755 ' . $default_dir . '/settings.php';
       $this->yell('"'. $project_properties['database_of_truth'] . '" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
     }
   }
+
+  /**
+   * Prepare your local machine for development.
+   *
+   * Pulls the database of truth, brings the database in line with local config,
+   * and enables local development modules, including config suite.
+   */
+  public function prepareLocal() {
+    $project_properties = $this->getProjectProperties();
+    if (!isset($project_properties['database_of_truth'])) {
+      $this->say('No source database configured. To use this command, you must add a TS_DATABASE_OF_TRUTH value to your .env file. Example: TS_DATABASE_OF_TRUTH=live');
+      return FALSE;
+    }
+    $do_composer_install = TRUE;
+    $project_properties = $this->getProjectProperties();
+    $grab_database = $this->confirm("Grab a fresh database?");
+    if ($grab_database == 'y') {
+      $do_composer_install = FALSE;
+      $drush_commands = [
+        'drush_grab_database' => 'drush sql-drop -y @self && drush  sql-sync @pantheon.' . $project_properties['project'] . '.' . $project_properties['database_of_truth'] . '@self -y',
+      ];
+      $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
+      if ($database_download->wasSuccessful()) {
+        $do_composer_install = TRUE;
+      }
+      else {
+        $this->yell('Remote database sync failed. Please run robo install again.');
+      }
+    }
+    if ($do_composer_install) {
+      $this->taskComposerInstall()
+        ->optimizeAutoloader()
+        ->run();
+      $drush_commands = [
+        'drush_clear_cache' => 'drush cr',
+        'drush_update_database' => 'drush updb',
+        'drush_clear_cache_again' => 'drush cr',
+        'drush_grab_config_changes' => 'drush config-import -y',
+        'drush_grab_config_local_changes' => 'drush config-split-import local -y',
+      ];
+      $this->taskExec(implode(' && ', $drush_commands))
+        ->dir($project_properties['web_root'])
+        ->run();
+    }
+  }
 }
