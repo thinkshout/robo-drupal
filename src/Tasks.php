@@ -14,6 +14,29 @@ class Tasks extends \Robo\Tasks
   }
 
   /**
+   * Determines the database to start from when doing new work on this project.
+   *
+   * @return mixed
+   *   Return the Pantheon environment you want to pull in on install (live,
+   *   dev, etc), or FALSE to install from scratch.
+   */
+  protected function databaseSourceOfTruth() {
+    return 'live';
+  }
+
+  /**
+   * Determines the migration folder to pull config from.
+   *
+   * @return mixed
+   *   Return the path to the folder from the Drupal root
+   *   (example: 'modules/custom/my_migration/config/install'), or FALSE if you
+   *   are running no ongoing migrations.
+   */
+  protected function migrationSourceFolder() {
+    return FALSE;
+  }
+
+  /**
    * Initialize the project for the first time.
    *
    * @return \Robo\Result
@@ -253,6 +276,25 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function install() {
+    if(getenv('CIRCLECI')) {
+      // Do nothing custom here.
+      return $this->trueFreshInstall();
+    }
+    elseif ($this->databaseSourceOfTruth()) {
+      $this->prepareLocal();
+    }
+    else {
+      $this->trueFreshInstall();
+      $this->postInstall();
+    }
+  }
+
+  /**
+   * Install or re-install the Drupal site.
+   *
+   * @return \Robo\Result
+   */
+  private function trueFreshInstall() {
     // Use user environment settings if we have them.
     if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
       $settings = json_decode($system_defaults, TRUE);
@@ -665,4 +707,205 @@ chmod 755 ' . $default_dir . '/settings.php';
     return $textToDelete;
   }
 
+  /**
+   * Clean up state of Pantheon dev & develop environments after deploying.
+   *
+   * Run this by adding the line:
+   * robo post:deploy
+   *
+   * right after this line:
+   * robo pantheon:deploy --y
+   *
+   * in your .circleci/config.yml file.
+   */
+  public function postDeploy() {
+    $terminus_site_env = $this->getPantheonSiteEnv();
+    $project_properties = $this->getProjectProperties();
+    $pantheon_prefix = $project_properties['project'];
+    if ($terminus_site_env == $pantheon_prefix . '.develop' || $terminus_site_env == $pantheon_prefix . '.dev') {
+      $drush_commands = [
+        'drush_partial_config_import' => "terminus remote:drush $terminus_site_env -- config-import --partial -y",
+        'drush_cache_clear' => "terminus remote:drush $terminus_site_env -- cr",
+        'drush_entity_updates' => "terminus remote:drush $terminus_site_env -- entity-updates -y",
+        'drush_update_database' => "terminus remote:drush $terminus_site_env -- updb -y",
+        'drush_full_config_import' => "terminus remote:drush $terminus_site_env -- config-import -y",
+      ];
+      // Run the installation.
+      $result = $this->taskExec(implode(' && ', $drush_commands))
+        ->run();
+    }
+  }
+
+  /**
+   * Pull the config from the live site down to your local.
+   *
+   * Run this command from a branch based off the last release tag on github.
+   * For example:
+   *   git checkout my_last_release
+   *   git checkout -b this_release_date
+   *   robo pull:config
+   *   git commit .
+   *   git push
+   *
+   * Afterwards, make a PR against master for these changes and merge them.
+   * Do this BEFORE merging develop into master.
+   */
+  public function pullConfig() {
+    $project_properties = $this->getProjectProperties();
+    $do_composer_install = $this->getDatabaseOfTruth();
+    if ($do_composer_install) {
+      $this->taskComposerInstall()
+        ->optimizeAutoloader()
+        ->run();
+      $drush_commands = [
+        'drush_clear_cache_again' => 'drush cr',
+        'drush_grab_config_changes' => 'drush config-export -y',
+      ];
+      $this->taskExec(implode(' && ', $drush_commands))
+        ->dir($project_properties['web_root'])
+        ->run();
+
+      // Ignore config-local changes -- the $database_of_truth site doesn't know about them.
+      $this->taskGitStack()
+        ->stopOnFail()
+        ->checkout('config-local')
+        ->run();
+
+      $this->yell('"'. $this->databaseSourceOfTruth() . '" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
+    }
+  }
+
+  /**
+   * Prepare your local machine for development.
+   *
+   * Pulls the database of truth, brings the database in line with local config,
+   * and enables local development modules, including config suite.
+   */
+  public function prepareLocal() {
+    $do_composer_install = TRUE;
+    $project_properties = $this->getProjectProperties();
+    $grab_database = $this->confirm("Grab a fresh database?");
+    if ($grab_database == 'y') {
+      $do_composer_install = $this->getDatabaseOfTruth();
+    }
+    if ($do_composer_install) {
+      $this->taskComposerInstall()
+        ->optimizeAutoloader()
+        ->run();
+      $drush_commands = [
+        'drush_clear_cache' => 'drush cr',
+        'drush_update_database' => 'drush updb',
+        'drush_clear_cache_again' => 'drush cr',
+        'drush_grab_config_changes' => 'drush config-import -y',
+        'drush_grab_config_local_changes' => 'drush config-split-import local -y',
+      ];
+      $this->taskExec(implode(' && ', $drush_commands))
+        ->dir($project_properties['web_root'])
+        ->run();
+    }
+  }
+
+  /**
+   * Prepare a freshly-installed site with some dummy data for site editors.
+   *
+   * This is sample code, not intended to be used as-is, but intended to be
+   * implemented in your RoboFile.php. It's not an abstract function, because
+   * its implementation shouldn't be required, and I wanted to add sample code.
+   */
+  public function postInstall() {
+    // Sample method code with instructions for use.
+    $this->say("The post:install command should be customized per project. Copy the postInstall() method from the `/vendor/robo-drupal/src/Tasks.php` folder into your RoboFile.php file and alter it to suit your needs.");
+    return TRUE;
+
+    // Code you'll want to use starts below.
+    $terminus_site_env = $this->getPantheonSiteEnv();
+    $project_properties = $this->getProjectProperties();
+    $pantheon_prefix = $project_properties['project'];
+    $needs_directory = FALSE;
+    // These are the remote domains we want to run the migration on.
+    $install_domains = [
+      $pantheon_prefix . '.develop',
+      $pantheon_prefix . '.dev',
+    ];
+
+    if ((in_array($terminus_site_env, $install_domains)) && getenv('CIRCLECI')) {
+      $cmd_prefix = "terminus remote:drush $terminus_site_env --";
+      $needs_directory = FALSE;
+    }
+    elseif (!getenv('CIRCLECI')) {
+      $cmd_prefix = "drush";
+      $needs_directory = TRUE;
+    }
+    if (!isset($cmd_prefix)) {
+      return;
+    }
+    if (in_array($terminus_site_env, $install_domains)) {
+      $drush_commands = [
+        'wake_old_multidev' => "terminus env:wake wfw8.d7database",
+        'drush_create_admin' => "$cmd_prefix ucrt admin@test.org --mail=admin@test.org --password=admin",
+        'drush_assign_admin' => "$cmd_prefix urol administrator --mail=admin@test.org",
+        'drush_migrate_prep' => "$cmd_prefix mim --group=migrate_drupal_7 --limit=50",
+      ];
+      // Run the commands you listed.
+      $query = $this->taskExec(implode(' && ', $drush_commands));
+      if ($needs_directory) {
+        $query->dir($project_properties['web_root']);
+      }
+      $query->run();
+    }
+  }
+
+  /**
+   * Helper function to pull the database of truth to your local machine.
+   *
+   * @return bool
+   *   If the remote database was reached and downloaded, return TRUE.
+   */
+  private function getDatabaseOfTruth() {
+    $current_command = $this->input()->getArgument('command');
+    $project_properties = $this->getProjectProperties();
+    if (!$this->databaseSourceOfTruth()) {
+      $this->say('No source database configured.');
+      $this->say('To use this command, you must return a string from the databaseSourceOfTruth() method in your project RoboFile.php.');
+      return FALSE;
+    }
+
+    $drush_commands = [
+      'drush_grab_database' => 'drush sql-drop -y @self && drush sql-sync @pantheon.' . $project_properties['project'] . '.' . $this->databaseSourceOfTruth() . ' @self -y',
+    ];
+    $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
+    if ($database_download->wasSuccessful()) {
+      return TRUE;
+    }
+    else {
+      $this->yell('Remote database sync failed. Please run `robo ' . $current_command . '` again.');
+      return FALSE;
+    }
+  }
+
+  /**
+   * Cleanup migrations.
+   *
+   * @option string migrations
+   *   Optional list of migrations to reset, separated by commmas.
+   */
+  public function migrateCleanup($opts = ['migrations' => '']) {
+    if ($this->migrationSourceFolder()) {
+      $migrations = explode(',', $opts['migrations']);
+      $project_properties = $this->getProjectProperties();
+      foreach ($migrations as $migration) {
+        $this->taskExec('drush mrs ' . $migration)
+          ->dir($project_properties['web_root'])
+          ->run();
+      }
+      $this->taskExec('drush mr --all && drush cim --partial --source=' . $this->migrationSourceFolder() . ' -y && drush ms')
+        ->dir($project_properties['web_root'])
+        ->run();
+    }
+    else {
+      $this->say('No migration source folder configured.');
+      $this->say('To use this command, you must return a folder path string within the migrationSourceFolder() method in your project RoboFile.php.');
+      return FALSE;
+    }
+  }
 }
