@@ -432,10 +432,11 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE]) {
-    $terminus_site = getenv('TERMINUS_SITE');
-    $terminus_env = getenv('TERMINUS_ENV');
-    $terminus_site_env = $this->getPantheonSiteEnv();
-    $result = $this->taskExec("terminus env:info $terminus_site_env")->run();
+    $terminus_site     = getenv('TERMINUS_SITE');
+    $terminus_env      = getenv('TERMINUS_ENV');
+    $terminus_site_env = $this->getPantheonSiteEnv($terminus_env);
+    $result            = $this->taskExec("terminus env:info $terminus_site_env")
+                              ->run();
 
     // Check for existing multidev and prompt to create.
     if (!$result->wasSuccessful()) {
@@ -526,10 +527,10 @@ chmod 755 ' . $default_dir . '/settings.php';
    * @return \Robo\Result
    */
   function pantheonTest($opts = ['feature' => NULL]) {
-    $project = $this->projectProperties['project'];
-    $env = $this->projectProperties['branch'];
-    $url = "https://$env-$project.pantheonsite.io";
-    $alias = "pantheon.$project.$env";
+    $project     = getenv('TERMINUS_SITE');
+    $env         = $this->projectProperties['branch'];
+    $url         = "https://$env-$project.pantheonsite.io";
+    $alias       = "pantheon.$project.$env";
     $drush_param = '"alias":"' . $alias . '"';
 
     $root = $this->projectProperties['web_root'];
@@ -613,8 +614,14 @@ chmod 755 ' . $default_dir . '/settings.php';
   /**
    * Get "<site>.<env>" commonly used in terminus commands.
    */
-  protected function getPantheonSiteEnv() {
-    return join('.', [getenv('TERMINUS_SITE'), getenv('TERMINUS_ENV')]);
+  protected function getPantheonSiteEnv($env = '') {
+    $site = getenv('TERMINUS_SITE');
+
+    if (!$env) {
+      $env = getenv('TERMINUS_ENV');
+    }
+
+    return join('.', [$site, $env]);
   }
 
   /**
@@ -720,8 +727,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    */
   public function postDeploy() {
     $terminus_site_env = $this->getPantheonSiteEnv();
-    $project_properties = $this->getProjectProperties();
-    $pantheon_prefix = $project_properties['project'];
+    $pantheon_prefix   = getenv('TERMINUS_SITE');
     if ($terminus_site_env == $pantheon_prefix . '.develop' || $terminus_site_env == $pantheon_prefix . '.dev') {
       $drush_commands = [
         'drush_partial_config_import' => "terminus remote:drush $terminus_site_env -- config-import --partial -y",
@@ -818,10 +824,10 @@ chmod 755 ' . $default_dir . '/settings.php';
     return TRUE;
 
     // Code you'll want to use starts below.
-    $terminus_site_env = $this->getPantheonSiteEnv();
+    $terminus_site_env  = $this->getPantheonSiteEnv();
     $project_properties = $this->getProjectProperties();
-    $pantheon_prefix = $project_properties['project'];
-    $needs_directory = FALSE;
+    $pantheon_prefix    = getenv('TERMINUS_SITE');
+    $needs_directory    = FALSE;
     // These are the remote domains we want to run the migration on.
     $install_domains = [
       $pantheon_prefix . '.develop',
@@ -862,16 +868,19 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   If the remote database was reached and downloaded, return TRUE.
    */
   private function getDatabaseOfTruth() {
-    $current_command = $this->input()->getArgument('command');
-    $project_properties = $this->getProjectProperties();
     if (!$this->databaseSourceOfTruth()) {
       $this->say('No source database configured.');
       $this->say('To use this command, you must return a string from the databaseSourceOfTruth() method in your project RoboFile.php.');
       return FALSE;
     }
 
-    $drush_commands = [
-      'drush_grab_database' => 'drush sql-drop -y @self && drush sql-sync @pantheon.' . $project_properties['project'] . '.' . $this->databaseSourceOfTruth() . ' @self -y',
+    $current_command    = $this->input()->getArgument('command');
+    $project_properties = $this->getProjectProperties();
+    $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
+
+    $drush_commands    = [
+      'drush_drop_database'   => 'drush sql-drop -y @self',
+      'drush_import_database' => 'drush sql-sync @pantheon.' . $terminus_site_env . ' @self -y',
     ];
     $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
     if ($database_download->wasSuccessful()) {
