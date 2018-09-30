@@ -758,27 +758,16 @@ chmod 755 ' . $default_dir . '/settings.php';
    */
   public function pullConfig() {
     $project_properties = $this->getProjectProperties();
-    $do_composer_install = $this->getDatabaseOfTruth();
-    if ($do_composer_install) {
-      $this->taskComposerInstall()
-        ->optimizeAutoloader()
-        ->run();
-      $drush_commands = [
-        'drush_clear_cache_again' => 'drush cr',
-        'drush_grab_config_changes' => 'drush config-export -y',
-      ];
-      $this->taskExec(implode(' && ', $drush_commands))
-        ->dir($project_properties['web_root'])
-        ->run();
+    $terminus_site_env  = $this->getPantheonSiteEnv('live');
 
-      // Ignore config-local changes -- the $database_of_truth site doesn't know about them.
-      $this->taskGitStack()
-        ->stopOnFail()
-        ->checkout('config-local')
-        ->run();
+    $drush_commands = [
+      'drush_grab_config_changes' => 'drush config-pull @pantheon.' . $terminus_site_env .' @self --uri=$(drush @pantheon.' . $terminus_site_env .' status uri --format=list) --root=$(drush @pantheon.' . $terminus_site_env .' status root --format=list)',
+    ];
+    $this->taskExec(implode(' && ', $drush_commands))
+      ->dir($project_properties['web_root'])
+      ->run();
 
-      $this->yell('"'. $this->databaseSourceOfTruth() . '" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
-    }
+    $this->yell('"live" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
   }
 
   /**
