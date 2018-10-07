@@ -757,17 +757,34 @@ chmod 755 ' . $default_dir . '/settings.php';
    * Do this BEFORE merging develop into master.
    */
   public function pullConfig() {
+    $backups_created = FALSE;
     $project_properties = $this->getProjectProperties();
-    $terminus_site_env  = $this->getPantheonSiteEnv('live');
+    $database_of_truth = $this->getDatabaseOfTruth();
+    $live_environment  = $this->getPantheonSiteEnv('live');
+    $environment_to_download = $this->getPantheonSiteEnv($database_of_truth);
 
-    $drush_commands = [
-      'drush_grab_config_changes' => 'drush config-pull @pantheon.' . $terminus_site_env .' @self --uri=$(drush @pantheon.' . $terminus_site_env .' status uri --format=list) --root=$(drush @pantheon.' . $terminus_site_env .' status root --format=list)',
-    ];
-    $this->taskExec(implode(' && ', $drush_commands))
-      ->dir($project_properties['web_root'])
-      ->run();
+    if ($database_of_truth != 'live') {
+      // terminus command: Back up database of truth files and database.
+      // terminus command: Pull the live database and files into database of truth.
+      $terminus_commands = [
+        'terminus ' . $environment_to_download . ' backup:create',
+        'terminus ' . $live_environment . ' backup:create',
+        'terminus env:clone-content ' . $live_environment . ' ' . $database_of_truth . ' backup:create'
+      ];
 
-    $this->yell('"live" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
+      $backups_created = $this->taskExec(implode(' && ', $terminus_commands))->run();
+    }
+
+    if ($backups_created) {
+      $drush_commands = [
+          'drush_grab_config_changes' => 'drush config-pull @pantheon.' . $database_of_truth . ' @self --uri=$(drush @pantheon.' . $environment_to_download . ' status uri --format=list) --root=$(drush @pantheon.' . $environment_to_download . ' status root --format=list)',
+      ];
+      $this->taskExec(implode(' && ', $drush_commands))
+          ->dir($project_properties['web_root'])
+          ->run();
+
+      $this->yell('"live" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
+    }
   }
 
   /**
