@@ -879,7 +879,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     $drush_commands    = [
       'drush_drop_database'   => 'drush sql-drop -y @self',
-      'drush_import_database' => 'terminus remote:drush ' . $terminus_site_env . ' -- sql-dump | drush @self sqlc',
+      'drush_import_database' => 'drush @pantheon.' . $terminus_site_env . ' sql-dump | drush @self sqlc',
     ];
     $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
     if ($database_download->wasSuccessful()) {
