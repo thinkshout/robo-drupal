@@ -867,49 +867,53 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   If the remote database was reached and downloaded, return TRUE.
    */
   private function getDatabaseOfTruth() {
-    if (!$this->databaseSourceOfTruth()) {
-      $this->say('No source database configured.');
-      $this->say('To use this command, you must return a string from the databaseSourceOfTruth() method in your project RoboFile.php.');
-      return FALSE;
-    }
-
-    $current_command    = $this->input()->getArgument('command');
     $project_properties = $this->getProjectProperties();
-    $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
-    $terminus_url_request = $this->taskExec('terminus backup:get ' . $terminus_site_env . ' --element="db"')
-      ->dir($project_properties['web_root'])
-      ->interactive(false)
-      ->run();
+    $default_database = $this->databaseSourceOfTruth();
 
-    if ($terminus_url_request->wasSuccessful()) {
-      $terminus_url = $terminus_url_request->getMessage();
-    }
-    else {
-      $this->yell('Failed to find a recent backup for the ' . $terminus_site_env . ' site. Does one exist?');
-      return FALSE;
+    if (file_exists('vendor/database.sql.gz')) {
+      $default_database = 'local';
     }
 
-    $this->say('Dropping local database.');
+    $this->say('Emptying existing database.');
     $empty_database = $this->taskExec('drush sql-drop -y @self')->dir($project_properties['web_root'])->run();
 
-    $wget_database = $this->taskExec('wget -O vendor/database.sql.gz "' . trim($terminus_url) . '"')->run();
+    $which_database = $this->askDefault(
+      'Which database backup should we load (local/dev/live)?', $default_database
+    );
 
-    if ($wget_database->wasSuccessful()) {
-      $drush_commands    = [
-        'drush_import_database' => 'zcat < vendor/database.sql.gz | drush @self sqlc'
-      ];
-      $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
+    if ($which_database !== 'local') {
+      $terminus_site_env  = $this->getPantheonSiteEnv($which_database);
+      $terminus_url_request = $this->taskExec('terminus backup:get ' . $terminus_site_env . ' --element="db"')
+        ->dir($project_properties['web_root'])
+        ->interactive(false)
+        ->run();
 
-      if ($database_import->wasSuccessful()) {
-        return TRUE;
+      if ($terminus_url_request->wasSuccessful()) {
+        $terminus_url = $terminus_url_request->getMessage();
       }
       else {
-        $this->yell('Could not read vendor/database.sql.gz into your local database. See if the command "zcat < vendor/database.sql.gz | drush @self sqlc" works outside of robo.');
+        $this->yell('Failed to find a recent backup for the ' . $terminus_site_env . ' site. Does one exist?');
+        return FALSE;
+      }
+
+      $wget_database = $this->taskExec('wget -O vendor/database.sql.gz "' . trim($terminus_url) . '"')->run();
+
+      if (!$wget_database->wasSuccessful()) {
+        $this->yell('Remote database sync failed.');
+        return FALSE;
       }
     }
+
+    $drush_commands    = [
+      'drush_import_database' => 'zcat < vendor/database.sql.gz | drush @self sqlc # Importing local copy of db.'
+    ];
+    $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
+
+    if ($database_import->wasSuccessful()) {
+      return TRUE;
+    }
     else {
-      $this->yell('Remote database sync failed.');
-      return FALSE;
+      $this->yell('Could not read vendor/database.sql.gz into your local database. See if the command "zcat < vendor/database.sql.gz | drush @self sqlc" works outside of robo.');
     }
   }
 
