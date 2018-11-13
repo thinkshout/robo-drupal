@@ -879,7 +879,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     $this->say('This command populates your database from a backup .sql.gz file.');
     $this->say('If you already have a database backup in your  vendor folder, the "local" option will be available.');
-    $this->say('If you want to grab a more recent backup from Pantheon, type in the environemnt name (dev, test, live)');
+    $this->say(' If you want to grab a more recent backup from Pantheon, type in the environment name (dev, test, live). This will be saved to your vendor folder for future re-installs.');
     $this->say('Backups are generated on Pantheon regularly, but might be old.');
     $this->say('If you need the very latest data from a Pantheon site, go create a new backup using either the Pantheon backend, or Terminus.');
 
