@@ -876,13 +876,29 @@ chmod 755 ' . $default_dir . '/settings.php';
     $current_command    = $this->input()->getArgument('command');
     $project_properties = $this->getProjectProperties();
     $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
+    $terminus_url_request = $this->taskExec('terminus backup:get ' . $terminus_site_env . ' --element="db"')
+      ->dir($project_properties['web_root'])
+      ->interactive(false)
+      ->run();
 
-    $drush_commands    = [
-      'drush_drop_database'   => 'drush sql-drop -y @self',
-      'drush_import_database' => 'drush @pantheon.' . $terminus_site_env . ' sql-dump | drush @self sqlc',
-    ];
-    $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
-    if ($database_download->wasSuccessful()) {
+    if ($terminus_url_request->wasSuccessful()) {
+      $terminus_url = $terminus_url_request->getMessage();
+    }
+    else {
+      $this->yell('Failed to find a recent backup for the ' . $terminus_site_env . ' site. Does one exist?');
+      return FALSE;
+    }
+
+    $this->say('Dropping local database.');
+    $empty_database = $this->taskExec('drush sql-drop -y @self')->dir($project_properties['web_root'])->run();
+
+    $wget_database = $this->taskExec('wget -O vendor/database.sql.gz "' . trim($terminus_url) . '"')->run();
+
+    if ($wget_database->wasSuccessful()) {
+      $drush_commands    = [
+        'drush_import_database' => 'zcat < vendor/database.sql.gz | drush @self sqlc'
+      ];
+      $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
       return TRUE;
     }
     else {
