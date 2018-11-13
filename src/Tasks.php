@@ -790,7 +790,7 @@ chmod 755 ' . $default_dir . '/settings.php';
   public function prepareLocal() {
     $do_composer_install = TRUE;
     $project_properties = $this->getProjectProperties();
-    $grab_database = $this->confirm("Grab a fresh database?");
+    $grab_database = $this->confirm("Load a database backup?");
     if ($grab_database == 'y') {
       $do_composer_install = $this->getDatabaseOfTruth();
     }
@@ -876,6 +876,12 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     $this->say('Emptying existing database.');
     $empty_database = $this->taskExec('drush sql-drop -y @self')->dir($project_properties['web_root'])->run();
+
+    $this->say('This command populates your database from a backup .sql.gz file.');
+    $this->say('If you already have a database backup in your  vendor folder, the "local" option will be available.');
+    $this->say('If you want to grab a more recent backup from Pantheon, type in the environemnt name (dev, test, live)');
+    $this->say('Backups are generated on Pantheon regularly, but might be old.');
+    $this->say('If you need the very latest data from a Pantheon site, go create a new backup using either the Pantheon backend, or Terminus.');
 
     $which_database = $this->askDefault(
       'Which database backup should we load (local/dev/live)?', $default_database
