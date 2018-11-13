@@ -899,10 +899,16 @@ chmod 755 ' . $default_dir . '/settings.php';
         'drush_import_database' => 'zcat < vendor/database.sql.gz | drush @self sqlc'
       ];
       $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
-      return TRUE;
+
+      if ($database_import->wasSuccessful()) {
+        return TRUE;
+      }
+      else {
+        $this->yell('Could not read vendor/database.sql.gz into your local database. See if the command "zcat < vendor/database.sql.gz | drush @self sqlc" works outside of robo.');
+      }
     }
     else {
-      $this->yell('Remote database sync failed. Please run `robo ' . $current_command . '` again.');
+      $this->yell('Remote database sync failed.');
       return FALSE;
     }
   }
