@@ -18,6 +18,6 @@
     },
     "require": {
         "vlucas/phpdotenv": "^2.2",
-        "consolidation/robo": "^1.1.0"
+        "consolidation/robo": "^1.3"
     }
 }
