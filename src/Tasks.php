@@ -765,7 +765,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       ->run();
 
     if ($terminus_url_request->wasSuccessful()) {
-      $do_composer_install = $this->getDatabaseOfTruth();
+      $do_composer_install = $this->downloadPantheonBackup($this->databaseSourceOfTruth());
     }
     else {
       $this->yell('Could not make a Database backup of "'. $terminus_site_env . '"! See if you can make one manually.');
@@ -901,30 +901,11 @@ chmod 755 ' . $default_dir . '/settings.php';
     );
 
     if ($which_database !== 'local') {
-      $terminus_site_env  = $this->getPantheonSiteEnv($which_database);
-      $terminus_url_request = $this->taskExec('terminus backup:get ' . $terminus_site_env . ' --element="db"')
-        ->dir($project_properties['web_root'])
-        ->interactive(false)
-        ->run();
-
-      if ($terminus_url_request->wasSuccessful()) {
-        $terminus_url = $terminus_url_request->getMessage();
-      }
-      else {
-        $this->yell('Failed to find a recent backup for the ' . $terminus_site_env . ' site. Does one exist?');
-        return FALSE;
-      }
-
-      $wget_database = $this->taskExec('wget -O vendor/database.sql.gz "' . trim($terminus_url) . '"')->run();
-
-      if (!$wget_database->wasSuccessful()) {
-        $this->yell('Remote database sync failed.');
-        return FALSE;
-      }
+      $getDB = $this->downloadPantheonBackup($which_database);
     }
 
     $drush_commands    = [
-      'drush_import_database' => 'zcat < vendor/database.sql.gz | drush sqlc @self # Importing local copy of db.'
+      'drush_import_database' => 'zcat < vendor/database.sql.gz | drush @self sqlc # Importing local copy of db.'
     ];
     $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
 
@@ -933,6 +914,40 @@ chmod 755 ' . $default_dir . '/settings.php';
     }
     else {
       $this->yell('Could not read vendor/database.sql.gz into your local database. See if the command "zcat < vendor/database.sql.gz | drush @self sqlc" works outside of robo.');
+    }
+  }
+
+  /**
+   * Grabs a backup from Pantheon.
+   *
+   * @param $env
+   *   The environemnt to get the backup from.
+   *
+   * @return bool
+   *   True if the backup was downloaded.
+   */
+  private function downloadPantheonBackup($env) {
+    $project_properties = $this->getProjectProperties();
+    $terminus_site_env  = $this->getPantheonSiteEnv($env);
+
+    $terminus_url_request = $this->taskExec('terminus backup:get ' . $terminus_site_env . ' --element="db"')
+      ->dir($project_properties['web_root'])
+      ->interactive(false)
+      ->run();
+
+    if ($terminus_url_request->wasSuccessful()) {
+      $terminus_url = $terminus_url_request->getMessage();
+    }
+    else {
+      $this->yell('Failed to find a recent backup for the ' . $terminus_site_env . ' site. Does one exist?');
+      return FALSE;
+    }
+
+    $wget_database = $this->taskExec('wget -O vendor/database.sql.gz "' . trim($terminus_url) . '"')->run();
+
+    if (!$wget_database->wasSuccessful()) {
+      $this->yell('Remote database sync failed.');
+      return FALSE;
     }
   }
 
@@ -946,6 +961,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     if ($this->migrationSourceFolder()) {
       $migrations = explode(',', $opts['migrations']);
       $project_properties = $this->getProjectProperties();
+
       foreach ($migrations as $migration) {
         $this->taskExec('drush mrs ' . $migration)
           ->dir($project_properties['web_root'])
