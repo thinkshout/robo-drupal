@@ -758,7 +758,20 @@ chmod 755 ' . $default_dir . '/settings.php';
    */
   public function pullConfig() {
     $project_properties = $this->getProjectProperties();
-    $do_composer_install = $this->getDatabaseOfTruth();
+    $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
+    $terminus_url_request = $this->taskExec('terminus backup:create ' . $terminus_site_env . ' --element="db"')
+      ->dir($project_properties['web_root'])
+      ->interactive(false)
+      ->run();
+
+    if ($terminus_url_request->wasSuccessful()) {
+      $do_composer_install = $this->getDatabaseOfTruth();
+    }
+    else {
+      $this->yell('Could not make a Database backup of "'. $terminus_site_env . '"! See if you can make one manually.');
+      return FALSE;
+    }
+
     if ($do_composer_install) {
       $this->taskComposerInstall()
         ->optimizeAutoloader()
