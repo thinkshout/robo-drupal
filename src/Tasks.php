@@ -766,16 +766,16 @@ chmod 755 ' . $default_dir . '/settings.php';
         ->dir($project_properties['web_root'])
         ->interactive(false)
         ->run();
-    }
 
-    if (!$terminus_url_request->wasSuccessful()) {
-      $this->yell('Could not make a Database backup of "'. $terminus_site_env . '"! See if you can make one manually.');
-      return FALSE;
+      if (!$terminus_url_request->wasSuccessful()) {
+        $this->yell('Could not make a Database backup of "'. $terminus_site_env . '"! See if you can make one manually.');
+        return FALSE;
+      }
     }
 
     $do_composer_install = $this->downloadPantheonBackup($this->databaseSourceOfTruth());
 
-    if ($do_composer_install) {
+    if ($do_composer_install && $this->importLocal()) {
       $this->taskComposerInstall()
         ->optimizeAutoloader()
         ->run();
@@ -907,17 +907,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       $getDB = $this->downloadPantheonBackup($which_database);
     }
 
-    $drush_commands    = [
-      'drush_import_database' => 'zcat < vendor/database.sql.gz | drush sqlc @self # Importing local copy of db.'
-    ];
-    $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
-
-    if ($database_import->wasSuccessful()) {
-      return TRUE;
-    }
-    else {
-      $this->yell('Could not read vendor/database.sql.gz into your local database. See if the command "zcat < vendor/database.sql.gz | drush @self sqlc" works outside of robo.');
-    }
+    return $this->importLocal();
   }
 
   /**
@@ -950,6 +940,29 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     if (!$wget_database->wasSuccessful()) {
       $this->yell('Remote database sync failed.');
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
+  /**
+   * Imports a local database.
+   *
+   * @return bool
+   *   True if import succeeded.
+   */
+  public function importLocal() {
+    $drush_commands    = [
+      'drush_import_database' => 'zcat < vendor/database.sql.gz | drush sqlc @self # Importing local copy of db.'
+    ];
+    $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
+
+    if ($database_import->wasSuccessful()) {
+      return TRUE;
+    }
+    else {
+      $this->yell('Could not read vendor/database.sql.gz into your local database. See if the command "zcat < vendor/database.sql.gz | drush @self sqlc" works outside of robo.');
       return FALSE;
     }
   }
