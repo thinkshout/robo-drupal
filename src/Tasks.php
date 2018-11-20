@@ -759,18 +759,21 @@ chmod 755 ' . $default_dir . '/settings.php';
   public function pullConfig() {
     $project_properties = $this->getProjectProperties();
     $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
-    $terminus_url_request = $this->taskExec('terminus backup:create ' . $terminus_site_env . ' --element="db"')
-      ->dir($project_properties['web_root'])
-      ->interactive(false)
-      ->run();
 
-    if ($terminus_url_request->wasSuccessful()) {
-      $do_composer_install = $this->downloadPantheonBackup($this->databaseSourceOfTruth());
+    $grab_database = $this->confirm("To pull the latest config, you should create a new backup on Pantheon. Create backup now?");
+    if ($grab_database == 'y') {
+      $terminus_url_request = $this->taskExec('terminus backup:create ' . $terminus_site_env . ' --element="db"')
+        ->dir($project_properties['web_root'])
+        ->interactive(false)
+        ->run();
     }
-    else {
+
+    if (!$terminus_url_request->wasSuccessful()) {
       $this->yell('Could not make a Database backup of "'. $terminus_site_env . '"! See if you can make one manually.');
       return FALSE;
     }
+
+    $do_composer_install = $this->downloadPantheonBackup($this->databaseSourceOfTruth());
 
     if ($do_composer_install) {
       $this->taskComposerInstall()
