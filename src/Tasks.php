@@ -905,7 +905,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     }
 
     $drush_commands    = [
-      'drush_import_database' => 'zcat < vendor/database.sql.gz | drush @self sqlc # Importing local copy of db.'
+      'drush_import_database' => 'zcat < vendor/database.sql.gz | drush sqlc @self # Importing local copy of db.'
     ];
     $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
 
