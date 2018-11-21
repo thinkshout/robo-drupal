@@ -431,9 +431,9 @@ class Tasks extends \Robo\Tasks
    *
    * @return \Robo\Result
    */
-  function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE, 'vr-dev' => FALSE]) {
+  function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE, 'pantheon-branch' => FALSE]) {
     $terminus_site     = getenv('TERMINUS_SITE');
-    $terminus_env      = $opts['vr-dev'] ? 'vr-dev' : getenv('TERMINUS_ENV');
+    $terminus_env      = $opts['pantheon-branch'] ? $opts['pantheon-branch'] : getenv('TERMINUS_ENV');
     $terminus_site_env = $this->getPantheonSiteEnv($terminus_env);
     $result            = $this->taskExec("terminus env:info $terminus_site_env")
                               ->run();
