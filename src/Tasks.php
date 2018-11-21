@@ -195,11 +195,11 @@ class Tasks extends \Robo\Tasks
   /**
    * Perform git checkout of host files.
    */
-  function deploy() {
+  function deploy($pantheon_branch = NULL) {
 
     $repo = $this->projectProperties['host_repo'];
 
-    $branch = $this->projectProperties['branch'];
+    if (!$pantheon_branch) {$pantheon_branch = $this->projectProperties['branch'];}
 
     $webroot = $this->projectProperties['web_root'];
 
@@ -220,7 +220,7 @@ class Tasks extends \Robo\Tasks
       ->stopOnFail()
       ->cloneRepo($repo, "$tmpDir/$hostDirName")
       ->dir("$tmpDir/$hostDirName")
-      ->checkout($branch)
+      ->checkout($pantheon_branch)
       ->run();
 
     // Get the last commit from the remote branch.
@@ -266,7 +266,7 @@ class Tasks extends \Robo\Tasks
       ->dir("$tmpDir/deploy")
       ->add('-A')
       ->commit($commit_message)
-      ->push('origin', $branch)
+      ->push('origin', $pantheon_branch)
       ->run();
   }
 
@@ -460,7 +460,7 @@ class Tasks extends \Robo\Tasks
     $this->_exec("terminus connection:set $terminus_site_env git");
 
     // Deployment
-    $this->deploy();
+    $this->deploy($terminus_env);
 
     // Trigger remote install.
     if ($opts['install']) {
