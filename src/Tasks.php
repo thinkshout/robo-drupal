@@ -428,6 +428,7 @@ class Tasks extends \Robo\Tasks
    *
    * @option boolean install Trigger an install on Pantheon.
    * @option boolean y Answer prompts with y.
+   * @option string pantheon-branch Use specified branch.
    *
    * @return \Robo\Result
    */
