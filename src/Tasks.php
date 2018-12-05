@@ -300,7 +300,7 @@ class Tasks extends \Robo\Tasks
       $settings = json_decode($system_defaults, TRUE);
       $admin_name = $this->projectProperties['admin_name'];
       $db_settings = $settings['databases']['default']['default'];
-      $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] .
+      $install_cmd = 'site-install --existing-config' .
         ' --db-url=mysql://' . $db_settings['username'] .
         ':' . $db_settings['password'] .
         '@' . $db_settings['host'] .
