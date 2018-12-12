@@ -189,7 +189,13 @@ class Tasks extends \Robo\Tasks
       ->line('TS_INSTALL_PROFILE=' . $this->projectProperties['install_profile'])
       ->run();
 
-    return $result;
+    // Write drush aliases.
+    $this->say('Writing drush aliases to .yml file.');
+    // Run the installation.
+    $result2 = $this->taskExec('drush site:alias-convert')
+      ->run();
+
+    return $result && $result2;
   }
 
   /**
