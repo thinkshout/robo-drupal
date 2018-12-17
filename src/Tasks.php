@@ -953,10 +953,12 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   True if import succeeded.
    */
   public function importLocal() {
+    $project_properties = $this->getProjectProperties();
+
     $drush_commands    = [
       'drush_import_database' => 'zcat < vendor/database.sql.gz | drush sqlc @self # Importing local copy of db.'
     ];
-    $database_import = $this->taskExec(implode(' && ', $drush_commands))->run();
+    $database_import = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
 
     if ($database_import->wasSuccessful()) {
       return TRUE;
