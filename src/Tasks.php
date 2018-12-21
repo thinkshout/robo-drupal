@@ -9,6 +9,13 @@ class Tasks extends \Robo\Tasks
 {
   private $projectProperties;
 
+  /**
+   * Whether or not the project uses migration plugins instead of config.
+   *
+   * @var bool
+   */
+  protected $usesMigrationPlugins = FALSE;
+
   function __construct() {
     $this->projectProperties = $this->getProjectProperties();
   }
@@ -898,7 +905,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   Optional list of migrations to reset, separated by commmas.
    */
   public function migrateCleanup($opts = ['migrations' => '']) {
-    if ($this->migrationSourceFolder()) {
+    if ($opts['migrations'] && ($this->migrationSourceFolder() || $this->usesMigrationPlugins)) {
       $migrations = explode(',', $opts['migrations']);
       $project_properties = $this->getProjectProperties();
       foreach ($migrations as $migration) {
@@ -906,13 +913,20 @@ chmod 755 ' . $default_dir . '/settings.php';
           ->dir($project_properties['web_root'])
           ->run();
       }
+    }
+    if ($this->migrationSourceFolder()) {
       $this->taskExec('drush mr --all && drush cim --partial --source=' . $this->migrationSourceFolder() . ' -y && drush ms')
         ->dir($project_properties['web_root'])
         ->run();
     }
+    else if ($this->usesMigrationPlugins) {
+      $this->taskExec('drush cr && drush mr --all && drush ms')
+        ->dir($project_properties['web_root'])
+        ->run();
+    }
     else {
-      $this->say('No migration source folder configured.');
-      $this->say('To use this command, you must return a folder path string within the migrationSourceFolder() method in your project RoboFile.php.');
+      $this->say('No migration sources configured.');
+      $this->say('To use this command, you must either return a folder path from the migrationSourceFolder() method or set $usesMigrationPlugins to TRUE in your project\'s RoboFile.php.');
       return FALSE;
     }
   }
