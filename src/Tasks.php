@@ -193,7 +193,12 @@ class Tasks extends \Robo\Tasks
   }
 
   /**
-   * Perform git checkout of host files.
+   * Deploy code from our source repo/branch to our deployment repo/branch.
+   *
+   * @param $pantheon_branch This enables us to define the target branch name.
+   * We use this to deploy code to a specific multidev for Pantheon deployments
+   * which we need for automated visual regression testing. In that case, the
+   * source (feature) branch gets deployed to the vr-dev branch/multidev.
    */
   function deploy($pantheon_branch = NULL) {
 
@@ -428,7 +433,10 @@ class Tasks extends \Robo\Tasks
    *
    * @option boolean install Trigger an install on Pantheon.
    * @option boolean y Answer prompts with y.
-   * @option string pantheon-branch Use specified branch.
+   * @option string pantheon-branch Use specified branch instead of source
+   * branch name. This enables us to deploy source branches with more than 11
+   * characters to Pantheon which we use for automated visual regression
+   * testing.
    *
    * @return \Robo\Result
    */
