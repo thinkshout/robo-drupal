@@ -758,8 +758,24 @@ chmod 755 ' . $default_dir . '/settings.php';
    */
   public function pullConfig() {
     $project_properties = $this->getProjectProperties();
-    $do_composer_install = $this->getDatabaseOfTruth();
-    if ($do_composer_install) {
+    $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
+
+    $grab_database = $this->confirm("To pull the latest config, you should create a new backup on Pantheon. Create backup now?");
+    if ($grab_database == 'y') {
+      $terminus_url_request = $this->taskExec('terminus backup:create ' . $terminus_site_env . ' --element="db"')
+        ->dir($project_properties['web_root'])
+        ->interactive(false)
+        ->run();
+
+      if (!$terminus_url_request->wasSuccessful()) {
+        $this->yell('Could not make a Database backup of "'. $terminus_site_env . '"! See if you can make one manually.');
+        return FALSE;
+      }
+    }
+
+    $do_composer_install = $this->downloadPantheonBackup($this->databaseSourceOfTruth());
+
+    if ($do_composer_install && $this->importLocal()) {
       $this->taskComposerInstall()
         ->optimizeAutoloader()
         ->run();
@@ -790,7 +806,7 @@ chmod 755 ' . $default_dir . '/settings.php';
   public function prepareLocal() {
     $do_composer_install = TRUE;
     $project_properties = $this->getProjectProperties();
-    $grab_database = $this->confirm("Grab a fresh database?");
+    $grab_database = $this->confirm("Load a database backup?");
     if ($grab_database == 'y') {
       $do_composer_install = $this->getDatabaseOfTruth();
     }
@@ -867,26 +883,89 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   If the remote database was reached and downloaded, return TRUE.
    */
   private function getDatabaseOfTruth() {
-    if (!$this->databaseSourceOfTruth()) {
-      $this->say('No source database configured.');
-      $this->say('To use this command, you must return a string from the databaseSourceOfTruth() method in your project RoboFile.php.');
+    $project_properties = $this->getProjectProperties();
+    $default_database = $this->databaseSourceOfTruth();
+
+    if (file_exists('vendor/database.sql.gz')) {
+      $default_database = 'local';
+    }
+
+    $this->say('Emptying existing database.');
+    $empty_database = $this->taskExec('drush sql-drop -y @self')->dir($project_properties['web_root'])->run();
+
+    $this->say('This command populates your database from a backup .sql.gz file.');
+    $this->say('If you already have a database backup in your  vendor folder, the "local" option will be available.');
+    $this->say(' If you want to grab a more recent backup from Pantheon, type in the environment name (dev, test, live). This will be saved to your vendor folder for future re-installs.');
+    $this->say('Backups are generated on Pantheon regularly, but might be old.');
+    $this->say('If you need the very latest data from a Pantheon site, go create a new backup using either the Pantheon backend, or Terminus.');
+
+    $which_database = $this->askDefault(
+      'Which database backup should we load (local/dev/live)?', $default_database
+    );
+
+    if ($which_database !== 'local') {
+      $getDB = $this->downloadPantheonBackup($which_database);
+    }
+
+    return $this->importLocal();
+  }
+
+  /**
+   * Grabs a backup from Pantheon.
+   *
+   * @param $env
+   *   The environemnt to get the backup from.
+   *
+   * @return bool
+   *   True if the backup was downloaded.
+   */
+  private function downloadPantheonBackup($env) {
+    $project_properties = $this->getProjectProperties();
+    $terminus_site_env  = $this->getPantheonSiteEnv($env);
+
+    $terminus_url_request = $this->taskExec('terminus backup:get ' . $terminus_site_env . ' --element="db"')
+      ->dir($project_properties['web_root'])
+      ->interactive(false)
+      ->run();
+
+    if ($terminus_url_request->wasSuccessful()) {
+      $terminus_url = $terminus_url_request->getMessage();
+    }
+    else {
+      $this->yell('Failed to find a recent backup for the ' . $terminus_site_env . ' site. Does one exist?');
       return FALSE;
     }
 
-    $current_command    = $this->input()->getArgument('command');
+    $wget_database = $this->taskExec('wget -O vendor/database.sql.gz "' . trim($terminus_url) . '"')->run();
+
+    if (!$wget_database->wasSuccessful()) {
+      $this->yell('Remote database sync failed.');
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
+  /**
+   * Imports a local database.
+   *
+   * @return bool
+   *   True if import succeeded.
+   */
+  public function importLocal() {
     $project_properties = $this->getProjectProperties();
-    $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
 
     $drush_commands    = [
       'drush_drop_database'   => 'drush @self sql-drop -y',
-      'drush_import_database' => 'drush @pantheon.' . $terminus_site_env . ' sql-dump | drush @self sqlc',
+      'drush_import_database' => 'zcat < ../vendor/database.sql.gz | drush sqlc @self # Importing local copy of db.'
     ];
-    $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
-    if ($database_download->wasSuccessful()) {
+    $database_import = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
+
+    if ($database_import->wasSuccessful()) {
       return TRUE;
     }
     else {
-      $this->yell('Remote database sync failed. Please run `robo ' . $current_command . '` again.');
+      $this->yell('Could not read vendor/database.sql.gz into your local database. See if the command "zcat < vendor/database.sql.gz | drush @self sqlc" works outside of robo.');
       return FALSE;
     }
   }
@@ -901,6 +980,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     if ($this->migrationSourceFolder()) {
       $migrations = explode(',', $opts['migrations']);
       $project_properties = $this->getProjectProperties();
+
       foreach ($migrations as $migration) {
         $this->taskExec('drush mrs ' . $migration)
           ->dir($project_properties['web_root'])
