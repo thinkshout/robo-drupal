@@ -878,7 +878,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
 
     $drush_commands    = [
-      'drush_drop_database'   => 'drush sql-drop -y @self',
+      'drush_drop_database'   => 'drush @self sql-drop -y',
       'drush_import_database' => 'drush @pantheon.' . $terminus_site_env . ' sql-dump | drush @self sqlc',
     ];
     $database_download = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
