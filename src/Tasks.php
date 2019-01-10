@@ -891,7 +891,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     }
 
     $this->say('Emptying existing database.');
-    $empty_database = $this->taskExec('drush sql-drop -y @self')->dir($project_properties['web_root'])->run();
+    $empty_database = $this->taskExec('drush @self sql-drop -y')->dir($project_properties['web_root'])->run();
 
     $this->say('This command populates your database from a backup .sql.gz file.');
     $this->say('If you already have a database backup in your  vendor folder, the "local" option will be available.');
