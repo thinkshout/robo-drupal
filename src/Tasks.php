@@ -476,7 +476,8 @@ class Tasks extends \Robo\Tasks
     $this->_exec("terminus connection:set $terminus_site_env git");
 
     // Deployment
-    $this->deploy($terminus_env);
+    $pantheon_branch = $terminus_env == 'dev' ? 'master' : $terminus_env;
+    $this->deploy($pantheon_branch);
 
     // Trigger remote install.
     if ($opts['install']) {
