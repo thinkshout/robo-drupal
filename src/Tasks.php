@@ -908,12 +908,12 @@ chmod 755 ' . $default_dir . '/settings.php';
     if ($getDB) {
       $this->say('Emptying existing database.');
       $empty_database = $this->taskExec('drush sql-drop -y @self')->dir($project_properties['web_root'])->run();
+      return $this->importLocal();
     }
     else {
-      $this->yell('Database backup failed. Your old database is still installed');
+      $this->yell('Failed to download a Pantheon backup. Database was not refreshed.');
+      return false;
     }
-
-    return $this->importLocal();
   }
 
   /**
