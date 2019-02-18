@@ -909,12 +909,12 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     $this->say('This command will drop all tables in your local database and re-populate from a backup .sql.gz file.');
     $this->say('If you already have a database backup in your  vendor folder, the "local" option will be available.');
-    $this->say('If you want to grab a more recent backup from Pantheon, type in the environment name (dev, test, live). This will be saved to your vendor folder for future re-installs.');
+    $this->say('If you want to grab a more recent backup from Pantheon, type in the environment name (i.e. dev, test, live, my-multidev). This will be saved to your vendor folder for future re-installs.');
     $this->say('Backups are generated on Pantheon regularly, but might be old.');
     $this->say('If you need the very latest data from a Pantheon site, go create a new backup using either the Pantheon backend, or Terminus.');
 
     $which_database = $this->askDefault(
-      'Which database backup should we load (local/dev/live)?', $default_database
+      'Which database backup should we load (i.e. local/dev/live)?', $default_database
     );
 
     $getDB = TRUE;
