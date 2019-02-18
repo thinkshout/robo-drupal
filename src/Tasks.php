@@ -9,6 +9,13 @@ class Tasks extends \Robo\Tasks
 {
   private $projectProperties;
 
+  /**
+   * Whether or not the project uses migration plugins instead of config.
+   *
+   * @var bool
+   */
+  protected $usesMigrationPlugins = FALSE;
+
   function __construct() {
     $this->projectProperties = $this->getProjectProperties();
   }
@@ -193,13 +200,18 @@ class Tasks extends \Robo\Tasks
   }
 
   /**
-   * Perform git checkout of host files.
+   * Deploy code from our source repo/branch to our deployment repo/branch.
+   *
+   * @param $pantheon_branch This enables us to define the target branch name.
+   * We use this to deploy code to a specific multidev for Pantheon deployments
+   * which we need for automated visual regression testing. In that case, the
+   * source (feature) branch gets deployed to the vr-dev branch/multidev.
    */
-  function deploy() {
+  function deploy($pantheon_branch = NULL) {
 
     $repo = $this->projectProperties['host_repo'];
 
-    $branch = $this->projectProperties['branch'];
+    if (!$pantheon_branch) {$pantheon_branch = $this->projectProperties['branch'];}
 
     $webroot = $this->projectProperties['web_root'];
 
@@ -220,7 +232,7 @@ class Tasks extends \Robo\Tasks
       ->stopOnFail()
       ->cloneRepo($repo, "$tmpDir/$hostDirName")
       ->dir("$tmpDir/$hostDirName")
-      ->checkout($branch)
+      ->checkout($pantheon_branch)
       ->run();
 
     // Get the last commit from the remote branch.
@@ -266,7 +278,7 @@ class Tasks extends \Robo\Tasks
       ->dir("$tmpDir/deploy")
       ->add('-A')
       ->commit($commit_message)
-      ->push('origin', $branch)
+      ->push('origin', $pantheon_branch)
       ->run();
   }
 
@@ -300,7 +312,7 @@ class Tasks extends \Robo\Tasks
       $settings = json_decode($system_defaults, TRUE);
       $admin_name = $this->projectProperties['admin_name'];
       $db_settings = $settings['databases']['default']['default'];
-      $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] .
+      $install_cmd = 'site-install --existing-config' .
         ' --db-url=mysql://' . $db_settings['username'] .
         ':' . $db_settings['password'] .
         '@' . $db_settings['host'] .
@@ -428,12 +440,16 @@ class Tasks extends \Robo\Tasks
    *
    * @option boolean install Trigger an install on Pantheon.
    * @option boolean y Answer prompts with y.
+   * @option string pantheon-branch Use specified branch instead of source
+   * branch name. This enables us to deploy source branches with more than 11
+   * characters to Pantheon which we use for automated visual regression
+   * testing.
    *
    * @return \Robo\Result
    */
-  function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE]) {
+  function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE, 'pantheon-branch' => NULL]) {
     $terminus_site     = getenv('TERMINUS_SITE');
-    $terminus_env      = getenv('TERMINUS_ENV');
+    $terminus_env      = $opts['pantheon-branch'] ? $opts['pantheon-branch'] : getenv('TERMINUS_ENV');
     $terminus_site_env = $this->getPantheonSiteEnv($terminus_env);
     $result            = $this->taskExec("terminus env:info $terminus_site_env")
                               ->run();
@@ -460,7 +476,8 @@ class Tasks extends \Robo\Tasks
     $this->_exec("terminus connection:set $terminus_site_env git");
 
     // Deployment
-    $this->deploy();
+    $pantheon_branch = $terminus_env == 'dev' ? 'master' : $terminus_env;
+    $this->deploy($pantheon_branch);
 
     // Trigger remote install.
     if ($opts['install']) {
@@ -818,7 +835,7 @@ chmod 755 ' . $default_dir . '/settings.php';
         'drush_clear_cache' => 'drush cr',
         'drush_update_database' => 'drush updb',
         'drush_grab_config_changes' => 'drush config-import -y',
-        'drush_grab_config_local_changes' => 'drush config-split-import local -y',
+        'drush_grab_config_local_changes' => 'drush config-split:import local -y',
       ];
       $this->taskExec(implode(' && ', $drush_commands))
         ->dir($project_properties['web_root'])
@@ -962,7 +979,8 @@ chmod 755 ' . $default_dir . '/settings.php';
     $project_properties = $this->getProjectProperties();
 
     $drush_commands    = [
-      'drush_import_database' => 'zcat < ../vendor/database.sql.gz | drush sqlc @self # Importing local copy of db.'
+      'drush_drop_database'   => 'drush @self sql-drop -y',
+      'drush_import_database' => 'zcat < ../vendor/database.sql.gz | drush @self sqlc # Importing local copy of db.'
     ];
     $database_import = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
 
@@ -982,7 +1000,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   Optional list of migrations to reset, separated by commmas.
    */
   public function migrateCleanup($opts = ['migrations' => '']) {
-    if ($this->migrationSourceFolder()) {
+    if ($opts['migrations'] && ($this->migrationSourceFolder() || $this->usesMigrationPlugins)) {
       $migrations = explode(',', $opts['migrations']);
       $project_properties = $this->getProjectProperties();
 
@@ -991,13 +1009,20 @@ chmod 755 ' . $default_dir . '/settings.php';
           ->dir($project_properties['web_root'])
           ->run();
       }
+    }
+    if ($this->migrationSourceFolder()) {
       $this->taskExec('drush mr --all && drush cim --partial --source=' . $this->migrationSourceFolder() . ' -y && drush ms')
         ->dir($project_properties['web_root'])
         ->run();
     }
+    else if ($this->usesMigrationPlugins) {
+      $this->taskExec('drush cr && drush mr --all && drush ms')
+        ->dir($project_properties['web_root'])
+        ->run();
+    }
     else {
-      $this->say('No migration source folder configured.');
-      $this->say('To use this command, you must return a folder path string within the migrationSourceFolder() method in your project RoboFile.php.');
+      $this->say('No migration sources configured.');
+      $this->say('To use this command, you must either return a folder path from the migrationSourceFolder() method or set $usesMigrationPlugins to TRUE in your project\'s RoboFile.php.');
       return FALSE;
     }
   }
