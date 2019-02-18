@@ -567,7 +567,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     // Load .env file from the local directory if it exists. Or use the .env.dist
     $env_file = (file_exists($properties['working_dir'] . '/.env')) ? '.env' : '.env.dist';
 
-    $dotenv = new \Dotenv\Dotenv($properties['working_dir'], $env_file);
+    $dotenv = \Dotenv\Dotenv::create($properties['working_dir'], $env_file);
     $dotenv->load();
 
     array_walk($properties, function(&$var, $key) {
