@@ -979,7 +979,6 @@ chmod 755 ' . $default_dir . '/settings.php';
     $project_properties = $this->getProjectProperties();
 
     $drush_commands    = [
-      'drush_drop_database'   => 'drush @self sql-drop -y',
       'drush_import_database' => 'zcat < ../vendor/database.sql.gz | drush @self sqlc # Importing local copy of db.'
     ];
     $database_import = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
