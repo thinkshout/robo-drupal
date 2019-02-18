@@ -312,7 +312,7 @@ class Tasks extends \Robo\Tasks
       $settings = json_decode($system_defaults, TRUE);
       $admin_name = $this->projectProperties['admin_name'];
       $db_settings = $settings['databases']['default']['default'];
-      $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] .
+      $install_cmd = 'site-install --existing-config' .
         ' --db-url=mysql://' . $db_settings['username'] .
         ':' . $db_settings['password'] .
         '@' . $db_settings['host'] .
@@ -835,7 +835,7 @@ chmod 755 ' . $default_dir . '/settings.php';
         'drush_clear_cache' => 'drush cr',
         'drush_update_database' => 'drush updb',
         'drush_grab_config_changes' => 'drush config-import -y',
-        'drush_grab_config_local_changes' => 'drush config-split-import local -y',
+        'drush_grab_config_local_changes' => 'drush config-split:import local -y',
       ];
       $this->taskExec(implode(' && ', $drush_commands))
         ->dir($project_properties['web_root'])
@@ -979,7 +979,8 @@ chmod 755 ' . $default_dir . '/settings.php';
     $project_properties = $this->getProjectProperties();
 
     $drush_commands    = [
-      'drush_import_database' => 'zcat < ../vendor/database.sql.gz | drush sqlc @self # Importing local copy of db.'
+      'drush_drop_database'   => 'drush @self sql-drop -y',
+      'drush_import_database' => 'zcat < ../vendor/database.sql.gz | drush @self sqlc # Importing local copy of db.'
     ];
     $database_import = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
 
