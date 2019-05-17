@@ -297,7 +297,7 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function applyUpdate() {
-    $currentBranch = $this->projectProperties['branch'];
+    $currentBranch = $this->taskExec('git branch | grep \* | cut -d " " -f2');
     $out = $this->taskExec('echo Current git branch is: $currentBranch')
       ->run();
 
@@ -311,7 +311,7 @@ class Tasks extends \Robo\Tasks
     $output = $this->taskExec('git checkout $currentBranch')
       ->dir($this->projectProperties['web_root'])
       ->run();
-    
+
   }
 
   /**
