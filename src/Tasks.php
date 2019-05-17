@@ -289,24 +289,16 @@ class Tasks extends \Robo\Tasks
    * do a composer install
    * do a robo pull:config
    * do a drush cim -y
-   * switch to your branch (where you have already updated with composer a composer update) and do a composer install
+   * switch to your branch (where you have already updated
+   *    with composer a composer update) and do a composer install
    * do a drush updb
    * do a drush cex -y
    *
    * @return \Robo\Result
    */
   function applyUpdate() {
-    if(getenv('CIRCLECI')) {
-      // Do nothing custom here.
-      return $this->trueFreshInstall();
-    }
-    elseif ($this->databaseSourceOfTruth()) {
-      $this->prepareLocal();
-    }
-    else {
-      $this->trueFreshInstall();
-      $this->postInstall();
-    }
+    $out = $this->taskExec('echo Getting started')
+      ->run();
   }
 
   /**
