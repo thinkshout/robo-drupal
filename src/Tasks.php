@@ -297,8 +297,13 @@ class Tasks extends \Robo\Tasks
    * @return \Robo\Result
    */
   function applyUpdate() {
-    $out = $this->taskExec('echo Getting started')
+    $output = $this->taskExec('git checkout master')
+      ->dir($this->projectProperties['web_root'])
       ->run();
+    if ($output == NULL) {
+      return NULL;
+    }
+
   }
 
   /**
