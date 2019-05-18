@@ -298,13 +298,10 @@ class Tasks extends \Robo\Tasks
    */
   function applyUpdate() {
 
-    $stringfromfile = file('.git/HEAD', FILE_USE_INCLUDE_PATH);
-    $firstLine = $stringfromfile[0]; //get the string from the array
-    $explodedstring = explode("/", $firstLine, 3); //seperate out by the "/" in the string
-    $currentBranch = $explodedstring[2]; //get the one that is always the branch name
-
-    $out = $this->taskExec('echo Current git branch is: $currentBranch')
+    $currentBranch = $this->taskExec('git symbolic-ref --short -q HEAD')
       ->run();
+
+    $this->say('Current git branch is: $currentBranch');
 
     $output = $this->taskExec('git checkout master')
       ->dir($this->projectProperties['web_root'])
