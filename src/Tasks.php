@@ -301,7 +301,7 @@ class Tasks extends \Robo\Tasks
     $currentBranch = $this->taskExec('git symbolic-ref --short -q HEAD')
       ->run();
 
-    $this->say('Current git branch is: $currentBranch');
+    $this->say("Current git branch is: $currentBranch");
 
     $output = $this->taskExec('git checkout master')
       ->dir($this->projectProperties['web_root'])
@@ -310,7 +310,7 @@ class Tasks extends \Robo\Tasks
       return NULL;
     }
 
-    $output = $this->taskExec('git checkout $currentBranch')
+    $output = $this->taskExec("git checkout $currentBranch")
       ->dir($this->projectProperties['web_root'])
       ->run();
 
