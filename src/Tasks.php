@@ -298,11 +298,9 @@ class Tasks extends \Robo\Tasks
    */
   function applyUpdate() {
 
-    $currentBranch = $this->taskExec('git symbolic-ref --short -q HEAD')
-      ->run()
-      ->getMessage();
-
-    $this->say("Current git branch is: $currentBranch");
+    $process = new Process('git symbolic-ref --short -q HEAD');
+    $process->run();
+    $currentBranch = $process->getOutput();
 
     $output = $this->taskExec('git checkout master')
       ->dir($this->projectProperties['web_root'])
@@ -311,10 +309,14 @@ class Tasks extends \Robo\Tasks
       return NULL;
     }
 
+    // Run composer install.
+    $this->taskComposerInstall()
+      ->optimizeAutoloader()
+      ->run();
+
     $output = $this->taskExec("git checkout $currentBranch")
       ->dir($this->projectProperties['web_root'])
       ->run();
-
   }
 
   /**
