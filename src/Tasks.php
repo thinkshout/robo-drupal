@@ -299,7 +299,8 @@ class Tasks extends \Robo\Tasks
   function applyUpdate() {
 
     $currentBranch = $this->taskExec('git symbolic-ref --short -q HEAD')
-      ->run();
+      ->run()
+      ->getMessage();
 
     $this->say("Current git branch is: $currentBranch");
 
