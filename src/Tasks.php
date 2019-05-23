@@ -330,11 +330,13 @@ class Tasks extends \Robo\Tasks
       ->optimizeAutoloader()
       ->run();
 
+    // clear cache, updb, cex
     $drush_commands = [
+      'drush_cache_clear' => 'drush cr',
       'drush_update_database' => 'drush updb -y',
       'drush_export_config' => 'drush cex -y',
     ];
-    
+
     $this->taskExec(implode(' && ', $drush_commands))
       ->dir($this->projectProperties['web_root'])
       ->run();
