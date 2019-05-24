@@ -4,6 +4,7 @@ namespace ThinkShout\RoboDrupal;
 
 use Drupal\Component\Utility\Crypt;
 use Symfony\Component\Process\Process;
+use Drupal\Core\Database\Database;
 
 class Tasks extends \Robo\Tasks
 {
@@ -836,7 +837,7 @@ chmod 755 ' . $default_dir . '/settings.php';
         ->run();
       $drush_commands = [
         'drush_clear_cache' => 'drush cr',
-        'drush_update_database' => 'drush updb',
+        'drush_update_database' => 'drush updb -y',
         'drush_grab_config_changes' => 'drush config-import -y',
         'drush_grab_config_local_changes' => 'drush config-split:import local -y',
       ];
@@ -926,6 +927,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     }
 
     if ($getDB) {
+      $this->taskExec('drush sql:create -y')->dir($project_properties['web_root'])->run();
       $this->say('Emptying existing database.');
       $empty_database = $this->taskExec('drush sql:drop -y')->dir($project_properties['web_root'])->run();
       return $this->importLocal();
