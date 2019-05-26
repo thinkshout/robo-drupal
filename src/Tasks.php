@@ -4,7 +4,6 @@ namespace ThinkShout\RoboDrupal;
 
 use Drupal\Component\Utility\Crypt;
 use Symfony\Component\Process\Process;
-use Drupal\Core\Database\Database;
 
 class Tasks extends \Robo\Tasks
 {
