@@ -95,7 +95,7 @@ class Tasks extends \Robo\Tasks
    *   profile:    install profile.
    *   db-upgrade: local migration database name.
    */
-  function configure($opts = [
+  public function configure($opts = [
     'db-pass' => NULL,
     'db-user' => NULL,
     'db-name' => NULL,
@@ -207,7 +207,7 @@ class Tasks extends \Robo\Tasks
    * which we need for automated visual regression testing. In that case, the
    * source (feature) branch gets deployed to the vr-dev branch/multidev.
    */
-  function deploy($pantheon_branch = NULL) {
+  public function deploy($pantheon_branch = NULL) {
 
     $repo = $this->projectProperties['host_repo'];
 
@@ -287,7 +287,7 @@ class Tasks extends \Robo\Tasks
    *
    * @return \Robo\Result
    */
-  function install() {
+  public function install() {
     if(getenv('CIRCLECI')) {
       // Do nothing custom here.
       return $this->trueFreshInstall();
@@ -351,7 +351,7 @@ class Tasks extends \Robo\Tasks
   /**
    * Output PHP info.
    */
-  function info() {
+  public function info() {
     phpinfo();
   }
 
@@ -365,7 +365,7 @@ class Tasks extends \Robo\Tasks
    *
    * @return \Robo\Result
    */
-  function test($opts = ['feature' => NULL, 'profile' => 'local', 'tags' => NULL]) {
+  public function test($opts = ['feature' => NULL, 'profile' => 'local', 'tags' => NULL]) {
     $this->setUpBehat();
 
     $behat_cmd = $this->taskExec('behat')
@@ -398,7 +398,7 @@ class Tasks extends \Robo\Tasks
    * Ensure that the filesystem has everything Behat needs. At present, that's
    * only chromedriver, AKA "Headless Chrome".
    */
-  function setUpBehat() {
+  public function setUpBehat() {
     // Ensure that this system has headless Chrome.
     if (!$this->taskExec('which chromedriver')->run()->wasSuccessful()) {
       $os = exec('uname');
@@ -428,7 +428,7 @@ class Tasks extends \Robo\Tasks
    *
    * @option int port Port number of listen on. Defaults to 8088.
    */
-  function run($opts = ['port' => 8088]) {
+  public function run($opts = ['port' => 8088]) {
     // execute server in background
     $this->taskServer($opts['port'])
       ->background()
@@ -447,7 +447,7 @@ class Tasks extends \Robo\Tasks
    *
    * @return \Robo\Result
    */
-  function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE, 'pantheon-branch' => NULL]) {
+  public function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE, 'pantheon-branch' => NULL]) {
     $terminus_site     = getenv('TERMINUS_SITE');
     $terminus_env      = $opts['pantheon-branch'] ? $opts['pantheon-branch'] : getenv('TERMINUS_ENV');
     $terminus_site_env = $this->getPantheonSiteEnv($terminus_env);
@@ -491,7 +491,7 @@ class Tasks extends \Robo\Tasks
    *
    * @return \Robo\Result
    */
-  function pantheonInstall() {
+  public function pantheonInstall() {
     $admin_name = $this->projectProperties['admin_name'];
     $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' --account-name=' . $admin_name . ' -y';
 
@@ -543,7 +543,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    *
    * @return \Robo\Result
    */
-  function pantheonTest($opts = ['feature' => NULL]) {
+  public function pantheonTest($opts = ['feature' => NULL]) {
     $project     = getenv('TERMINUS_SITE');
     $env         = $this->projectProperties['branch'];
     $url         = "https://$env-$project.pantheonsite.io";
@@ -609,7 +609,9 @@ chmod 755 ' . $default_dir . '/settings.php';
     return $properties;
   }
 
-  // See Symfony\Component\Console\Input.
+  /*
+   * See Symfony\Component\Console\Input.
+   */
   protected function escapeArg($string) {
     return preg_match('{^[\w-]+$}', $string) ? $string : escapeshellarg($string);
   }
