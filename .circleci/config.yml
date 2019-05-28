@@ -1,0 +1,13 @@
+version: 2
+jobs:
+  build:
+    docker:
+       - image: thinkshout/nginx-php-fpm:php72
+    working_directory: /var/www/html/robo-drupal
+    steps:
+      - checkout
+      - add_ssh_keys
+      - run:
+          name: Generate documentation
+          command: |
+            doxygen robo-drupalDoxygenConfig
