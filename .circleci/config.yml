@@ -1,0 +1,20 @@
+version: 2
+jobs:
+  build:
+    docker:
+       - image: nnadeau/docker-doxygen
+    working_directory: /var/www/html/robo-drupal
+    steps:
+      - checkout
+      - add_ssh_keys
+      - run:
+          name: Generate documentation
+          command: |
+            doxygen robo-drupalDoxygenConfig
+            cd ..
+            git clone git@github.com:thinkshout/robo-drupal-docs.git
+            cd robo-drupal-docs
+            mv ../robo-drupal/docs/html/* .
+            git add .
+            git commit -m "doxygen docs update for robo-drupal"
+            git push
