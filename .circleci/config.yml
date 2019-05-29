@@ -11,10 +11,5 @@ jobs:
           name: Generate documentation
           command: |
             doxygen robo-drupalDoxygenConfig
-            cd ..
-            git clone git@github.com:thinkshout/robo-drupal-docs.git
-            cd robo-drupal-docs
-            mv ../robo-drupal/docs/html/* .
-            git add .
-            git commit -m "doxygen docs update for robo-drupal"
-            git push
+            mv docs/html/* docs
+            rm -r docs/html
