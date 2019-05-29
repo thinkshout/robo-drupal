@@ -3,6 +3,7 @@ jobs:
   build:
     docker:
        - image: nnadeau/docker-doxygen
+       - image: alpine/git
     working_directory: /var/www/html/robo-drupal
     steps:
       - checkout
@@ -16,5 +17,5 @@ jobs:
             cd robo-drupal-docs
             mv ../robo-drupal/docs/html/* .
             git add .
-            git commit -m "doxygen docs update for robo-drupal"
+            git commit -m "doxygen docs update for robo-drupal [ci skip]"
             git push
