@@ -11,3 +11,5 @@ jobs:
           name: Generate documentation
           command: |
             doxygen robo-drupalDoxygenConfig
+            mv docs/html/* docs
+            rm -r docs/html
