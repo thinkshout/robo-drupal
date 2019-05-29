@@ -11,6 +11,8 @@ jobs:
           name: Generate documentation
           command: |
             doxygen robo-drupalDoxygenConfig
+            git config --global user.email "dev-team@thinkshout.com"
+            git config --global user.name "Circle CI"
             git add .
             git commit -m "doxygen docs update for robo-drupal [ci skip]"
             git push
