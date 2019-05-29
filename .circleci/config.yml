@@ -2,8 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-       - image: nnadeau/docker-doxygen
-       - image: alpine/git
+       - image: tsgkadot/docker-doxygen
     working_directory: /var/www/html/robo-drupal
     steps:
       - checkout
