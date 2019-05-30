@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-       - image: tsgkadot/docker-doxygen
+       - image: hrektts/doxygen
     working_directory: /var/www/html/robo-drupal
     steps:
       - checkout
