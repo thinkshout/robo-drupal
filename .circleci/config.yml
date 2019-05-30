@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-       - image: slaves/doxygen
+       - image: tsgkadot/docker-doxygen
     working_directory: /var/www/html/robo-drupal
     steps:
       - checkout
@@ -10,6 +10,7 @@ jobs:
       - run:
           name: Generate documentation
           command: |
+            apk --update openssh
             doxygen robo-drupalDoxygenConfig
             git config --global user.email "dev-team@thinkshout.com"
             git config --global user.name "Circle CI"
