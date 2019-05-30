@@ -14,8 +14,7 @@ jobs:
           command: |
             apk add doxygen graphviz
             doxygen robo-drupalDoxygenConfig
-            cd docs
-            mv ../robo-drupal/docs/html/* .
+            mv docs/html/* docs
             git config --global user.email "dev-team@thinkshout.com"
             git config --global user.name "Circle CI"
             git add .
