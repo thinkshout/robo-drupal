@@ -7,6 +7,8 @@ jobs:
     steps:
       - checkout
       - add_ssh_keys
+          fingerprints:
+          - "82:35:ca:6b:5d:24:40:ab:00:8e:46:a9:51:37:2e:a3"
       - run:
           name: Generate documentation
           command: |
@@ -16,4 +18,4 @@ jobs:
             git config --global user.name "Circle CI"
             git add .
             git commit -m "doxygen docs update for robo-drupal [ci skip]"
-            git push
+            git push --set-upstream origin $CIRCLE_BRANCH
