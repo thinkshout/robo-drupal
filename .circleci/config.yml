@@ -10,7 +10,7 @@ jobs:
       - run:
           name: Generate documentation
           command: |
-            apk --update openssh
+            apk add openssh
             doxygen robo-drupalDoxygenConfig
             git config --global user.email "dev-team@thinkshout.com"
             git config --global user.name "Circle CI"
