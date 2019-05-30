@@ -2,15 +2,15 @@ version: 2
 jobs:
   build:
     docker:
-       - image: tsgkadot/docker-doxygen
-    working_directory: /var/www/html/robo-drupal
+       - image: alpine-docker/git
+    working_directory: /robo-drupal
     steps:
       - checkout
       - add_ssh_keys
       - run:
           name: Generate documentation
           command: |
-            apk add openssh
+            apk add doxygen graphviz
             doxygen robo-drupalDoxygenConfig
             git config --global user.email "dev-team@thinkshout.com"
             git config --global user.name "Circle CI"
