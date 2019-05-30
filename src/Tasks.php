@@ -44,7 +44,7 @@ class Tasks extends \Robo\Tasks
   }
 
   /**
-   * Initialize the project for the first time.
+   * Initialize the project for the first time MARIA UPDATE.
    *
    * @return \Robo\Result
    */
