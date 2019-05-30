@@ -2,19 +2,23 @@ version: 2
 jobs:
   build:
     docker:
-       - image: nnadeau/docker-doxygen
-    working_directory: /var/www/html/robo-drupal
+       - image: alpine/git
+    working_directory: /robo-drupal
     steps:
       - checkout
-      - add_ssh_keys
+      - add_ssh_keys:
+          fingerprints:
+          - "82:35:ca:6b:5d:24:40:ab:00:8e:46:a9:51:37:2e:a3"
       - run:
           name: Generate documentation
           command: |
+            apk add doxygen graphviz
             doxygen robo-drupalDoxygenConfig
-            cd ..
-            git clone git@github.com:thinkshout/robo-drupal-docs.git
-            cd robo-drupal-docs
-            mv ../robo-drupal/docs/html/* .
+            mv docs/html new-docs
+            rm -r docs
+            mv new-docs docs
+            git config --global user.email "dev-team@thinkshout.com"
+            git config --global user.name "Circle CI"
             git add .
-            git commit -m "doxygen docs update for robo-drupal"
-            git push
+            git commit -m "doxygen docs update for robo-drupal [ci skip]"
+            git push --set-upstream origin $CIRCLE_BRANCH
