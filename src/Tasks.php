@@ -604,6 +604,9 @@ chmod 755 ' . $default_dir . '/settings.php';
     }
     else {
       $properties['db-name'] = $properties['project'] . '_' . $properties['branch'];
+
+      // replace dashes with underscores:
+      $properties['db-name'] = str_replace("-", "_", $properties['db-name']);
     }
 
     return $properties;
