@@ -1030,4 +1030,53 @@ chmod 755 ' . $default_dir . '/settings.php';
       return FALSE;
     }
   }
+
+
+  /**
+   * Runs a "composer update" and pushes results to the "autoupdate" branch.
+   *
+   * This command should be ran after checking out the default branch of a
+   * project. If "composer update" results in any changed files, a force push
+   * is used to ensure that the "autoupdate" branch is only one commit ahead
+   * of the default branch.
+   *
+   * @param string $profile
+   *   A specific profile to update, ex: "thinkshout/bene".
+   *
+   * @return bool
+   *   Whether or not the update succeeded.
+   */
+  public function ciUpdate($profile = NULL) {
+    $exec = $this->taskComposerUpdate()
+      ->option('with-dependencies');
+
+    if ($profile) {
+      $exec->arg($profile);
+    }
+
+    $result = $exec->run();
+
+    if (!$result->wasSuccessful()) return FALSE;
+
+    $result = $this->taskExec('git status -s')
+      ->interactive(FALSE)
+      ->run();
+
+    if (!$result->wasSuccessful()) return FALSE;
+
+    if (empty($result->getMessage())) {
+      $this->say('No updates to commit.');
+      return $result;
+    }
+
+    $result = $this->taskExec('git checkout -b autoupdate && git add . && git commit -m "Ran automatic updates." && git push --force -u origin autoupdate')
+      ->run();
+
+    if ($result->wasSuccessful()) {
+      $this->say('Update complete');
+      return TRUE;
+    }
+
+    return FALSE;
+  }
 }
