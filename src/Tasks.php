@@ -1066,7 +1066,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     if (empty($result->getMessage())) {
       $this->say('No updates to commit.');
-      return $result;
+      return TRUE;
     }
 
     $result = $this->taskExec('git checkout -b autoupdate && git add . && git commit -m "Ran automatic updates." && git push --force -u origin autoupdate')
