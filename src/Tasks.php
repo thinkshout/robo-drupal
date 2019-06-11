@@ -762,6 +762,13 @@ chmod 755 ' . $default_dir . '/settings.php';
       $result = $this->taskExec(implode(' && ', $drush_commands))
         ->run();
     }
+    if ($terminus_site_env === $pantheon_prefix . '.autoupdate') {
+      $drush_commands = [
+        'drush_update_database' => "terminus remote:drush $terminus_site_env -- updb -y",
+      ];
+      $this->taskExec(implode(' && ', $drush_commands))
+        ->run();
+    }
   }
 
   /**
