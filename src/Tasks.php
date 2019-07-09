@@ -1084,6 +1084,6 @@ chmod 755 ' . $default_dir . '/settings.php';
       return TRUE;
     }
 
-    return FALSE;
+    return $result;
   }
 }
