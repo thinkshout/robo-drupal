@@ -782,7 +782,20 @@ chmod 755 ' . $default_dir . '/settings.php';
     $project_properties = $this->getProjectProperties();
     $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
 
-    $grab_database = $this->confirm("To pull the latest config, you should create a new backup on Pantheon. Create backup now?");
+    $terminus_backup_timestamp = $this->taskExec('terminus backup:info ' . $terminus_site_env . ' --field="date"')
+                                 ->dir($project_properties['web_root'])
+                                 ->interactive(false)
+                                 ->run();
+
+    $this->say("To pull the latest config, you should use a current database backup.");
+    if($terminus_backup_timestamp->wasSuccessful()) {
+      $this->say("The most recent backup is from " . date('r', intval($terminus_backup_timestamp->getMessage())));
+    }
+    else {
+      $this->say("A recent backup was not found.");
+    }
+
+    $grab_database = $this->confirm("Create a new backup now?");
     if ($grab_database == 'y') {
       $terminus_url_request = $this->taskExec('terminus backup:create ' . $terminus_site_env . ' --element="db"')
         ->dir($project_properties['web_root'])
