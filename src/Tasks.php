@@ -283,66 +283,6 @@ class Tasks extends \Robo\Tasks
   }
 
   /**
-   * Here's what we're doing in this function.
-   *
-   * checkout master
-   * do a composer install
-   * do a robo pull:config
-   * do a drush cim -y
-   * switch to your branch (where you have already updated
-   *    with composer a composer update) and do a composer install
-   * do a drush updb
-   * do a drush cex -y
-   *
-   * @return \Robo\Result
-   */
-  function applyUpdate() {
-
-    $process = new Process('git symbolic-ref --short -q HEAD');
-    $process->run();
-    $currentBranch = $process->getOutput();
-
-    $output = $this->taskExec('git checkout master')
-      ->dir($this->projectProperties['web_root'])
-      ->run();
-    if ($output == NULL) {
-      return NULL;
-    }
-
-    // Run composer install.
-    $this->taskComposerInstall()
-      ->optimizeAutoloader()
-      ->run();
-
-    // This is interactive, will having to answer a question be a problem?
-    $this->pullConfig();
-
-    $this->taskExec('drush cim -y')
-      ->dir($this->projectProperties['web_root'])
-      ->run();
-
-    $output = $this->taskExec("git checkout $currentBranch")
-      ->dir($this->projectProperties['web_root'])
-      ->run();
-
-    // Run composer install.
-    $this->taskComposerInstall()
-      ->optimizeAutoloader()
-      ->run();
-
-    // clear cache, updb, cex
-    $drush_commands = [
-      'drush_cache_clear' => 'drush cr',
-      'drush_update_database' => 'drush updb -y',
-      'drush_export_config' => 'drush cex -y',
-    ];
-
-    $this->taskExec(implode(' && ', $drush_commands))
-      ->dir($this->projectProperties['web_root'])
-      ->run();
-  }
-
-  /**
    * Install or re-install the Drupal site.
    *
    * @return \Robo\Result
