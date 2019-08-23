@@ -468,7 +468,7 @@ class Tasks extends \Robo\Tasks
       $made_the_multidev = $this->taskExec("terminus multidev:create $terminus_site.dev $terminus_env")
         ->run();
 
-      if (!$made_the_multidev) {
+      if (!$made_the_multidev->wasSuccessful()) {
         // We assume we are out of multidevs.
         return FALSE;
       }
