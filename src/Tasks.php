@@ -926,9 +926,8 @@ chmod 755 ' . $default_dir . '/settings.php';
     }
 
     if ($getDB) {
-      $this->taskExec('drush sql:create -y')->dir($project_properties['web_root'])->run();
       $this->say('Emptying existing database.');
-      $empty_database = $this->taskExec('drush sql:drop -y')->dir($project_properties['web_root'])->run();
+      $this->taskExec('drush sql:create -y')->dir($project_properties['web_root'])->run();
       return $this->importLocal();
     }
     else {
