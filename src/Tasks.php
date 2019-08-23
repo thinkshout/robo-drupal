@@ -996,6 +996,9 @@ chmod 755 ' . $default_dir . '/settings.php';
   public function importLocal() {
     $project_properties = $this->getProjectProperties();
 
+    // Empty out the old database so deleted tables don't stick around.
+    $this->taskExec('drush sql:drop -y')->dir($project_properties['web_root'])->run();
+
     $drush_commands    = [
       'drush_import_database' => 'zcat < ../vendor/database.sql.gz | drush @self sqlc # Importing local copy of db.'
     ];
