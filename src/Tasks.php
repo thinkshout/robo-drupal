@@ -493,7 +493,7 @@ class Tasks extends \Robo\Tasks
    */
   public function pantheonInstall() {
     $admin_name = $this->projectProperties['admin_name'];
-    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' --existing-config --account-name=' . $admin_name . ' -y ';
+    $install_cmd = 'site-install --existing-config --account-name=' . $admin_name . ' -y ';
 
     $terminus_site_env = $this->getPantheonSiteEnv();
     $install_cmd = "terminus remote:drush $terminus_site_env -- $install_cmd";
