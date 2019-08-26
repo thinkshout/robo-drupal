@@ -304,9 +304,12 @@ class Tasks extends \Robo\Tasks
   /**
    * Install or re-install the Drupal site.
    *
+   * @param string $cmd_prefix
+   *   The prefix for the install command. Terminus can overwrite.
+   *
    * @return \Robo\Result
    */
-  private function trueFreshInstall() {
+  private function trueFreshInstall($cmd_prefix = 'drush') {
     // Use user environment settings if we have them.
     if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
       $settings = json_decode($system_defaults, TRUE);
@@ -321,7 +324,7 @@ class Tasks extends \Robo\Tasks
         ' -y  --account-name=' . $admin_name;
     }
     else {
-      $install_cmd = 'site-install standard -y';
+      $install_cmd = 'site-install minimal -y';
     }
 
     // Install dependencies. Only works locally.
@@ -334,7 +337,7 @@ class Tasks extends \Robo\Tasks
       $this->_chmod($this->projectProperties['web_root'] . '/sites/default/settings.php', 0755);
     }
 
-    $install_cmd = 'drush ' . $install_cmd;
+    $install_cmd = $cmd_prefix . $install_cmd;
 
     // Run the installation.
     $result = $this->taskExec($install_cmd)
@@ -493,10 +496,8 @@ class Tasks extends \Robo\Tasks
    */
   public function pantheonInstall() {
     $admin_name = $this->projectProperties['admin_name'];
-    $install_cmd = 'site-install ' . $this->projectProperties['install_profile'] . ' --account-name=' . $admin_name . ' -y';
 
     $terminus_site_env = $this->getPantheonSiteEnv();
-    $install_cmd = "terminus remote:drush $terminus_site_env -- $install_cmd";
     // Pantheon wants the site in SFTP for installs.
     $this->_exec("terminus connection:set $terminus_site_env sftp");
 
@@ -523,8 +524,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     exec($sftp_command);
 
     // Run the installation.
-    $result = $this->taskExec($install_cmd)
-      ->run();
+    $result = $this->trueFreshInstall("terminus remote:drush $terminus_site_env --");
     // Put the site back into git mode.
     $this->_exec("terminus connection:set $terminus_site_env git");
 
