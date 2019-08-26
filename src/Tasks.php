@@ -309,7 +309,7 @@ class Tasks extends \Robo\Tasks
    *
    * @return \Robo\Result
    */
-  private function trueFreshInstall($cmd_prefix = 'drush ') {
+  private function trueFreshInstall($cmd_prefix = 'drush') {
     // Use user environment settings if we have them.
     if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
       $settings = json_decode($system_defaults, TRUE);
@@ -337,7 +337,7 @@ class Tasks extends \Robo\Tasks
       $this->_chmod($this->projectProperties['web_root'] . '/sites/default/settings.php', 0755);
     }
 
-    $install_cmd = $cmd_prefix . $install_cmd;
+    $install_cmd = $cmd_prefix . ' ' . $install_cmd;
 
     // Run the installation.
     $result = $this->taskExec($install_cmd)
