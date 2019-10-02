@@ -754,7 +754,6 @@ chmod 755 ' . $default_dir . '/settings.php';
       $drush_commands = [
         'drush_partial_config_import' => "terminus remote:drush $terminus_site_env -- config-import --partial -y",
         'drush_cache_clear' => "terminus remote:drush $terminus_site_env -- cr",
-        'drush_entity_updates' => "terminus remote:drush $terminus_site_env -- entity-updates -y",
         'drush_update_database' => "terminus remote:drush $terminus_site_env -- updb -y",
         'drush_full_config_import' => "terminus remote:drush $terminus_site_env -- config-import -y",
       ];
