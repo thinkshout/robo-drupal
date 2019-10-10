@@ -1050,8 +1050,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    * @param string $profile
    *   A specific profile to update, ex: "thinkshout/bene".
    *
-   * @return bool
-   *   Whether or not the update succeeded.
+   * @return \Robo\Result
+   *   The last robo command's result.
    */
   public function ciUpdate($profile = NULL) {
     $exec = $this->taskComposerUpdate()
