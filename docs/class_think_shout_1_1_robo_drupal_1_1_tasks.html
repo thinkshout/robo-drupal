@@ -136,6 +136,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aecfd5aa3d4c3a4e808650caa1383ee40"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_think_shout_1_1_robo_drupal_1_1_tasks.html#aecfd5aa3d4c3a4e808650caa1383ee40">migrateCleanup</a> ($opts=['migrations'=&gt; ''])</td></tr>
 <tr class="memdesc:aecfd5aa3d4c3a4e808650caa1383ee40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup migrations.  <a href="#aecfd5aa3d4c3a4e808650caa1383ee40">More...</a><br /></td></tr>
 <tr class="separator:aecfd5aa3d4c3a4e808650caa1383ee40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9a811f055f6a162bbf7b2108a6921b7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_think_shout_1_1_robo_drupal_1_1_tasks.html#ac9a811f055f6a162bbf7b2108a6921b7">ciUpdate</a> ($profile=NULL)</td></tr>
+<tr class="memdesc:ac9a811f055f6a162bbf7b2108a6921b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a "composer update" and pushes results to the "autoupdate" branch.  <a href="#ac9a811f055f6a162bbf7b2108a6921b7">More...</a><br /></td></tr>
+<tr class="separator:ac9a811f055f6a162bbf7b2108a6921b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -178,6 +181,36 @@ Protected Attributes</h2></td></tr>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l00008">8</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="ac9a811f055f6a162bbf7b2108a6921b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9a811f055f6a162bbf7b2108a6921b7">&#9670;&nbsp;</a></span>ciUpdate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ciUpdate </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>$profile</em> = <code>NULL</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Runs a "composer update" and pushes results to the "autoupdate" branch. </p>
+<p>This command should be ran after checking out the default branch of a project. If "composer update" results in any changed files, a force push is used to ensure that the "autoupdate" branch is only one commit ahead of the default branch.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramtype">string</td><td class="paramname">$profile</td><td>A specific profile to update, ex: "thinkshout/bene".</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>\Robo\Result The last robo command's result. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l01078">1078</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
+
+</div>
+</div>
 <a id="a660b69c0610f55ad64d935b1b3a08ca2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a660b69c0610f55ad64d935b1b3a08ca2">&#9670;&nbsp;</a></span>configure()</h2>
 
@@ -455,7 +488,7 @@ Protected Attributes</h2></td></tr>
 <p>Imports a local database. </p>
 <dl class="section return"><dt>Returns</dt><dd>bool True if import succeeded. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l01002">1002</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l01009">1009</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
 
 </div>
 </div>
@@ -532,7 +565,7 @@ Protected Attributes</h2></td></tr>
 <p>Cleanup migrations. </p>
 <p>@option string migrations Optional list of migrations to reset, separated by commmas. </p>
 
-<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l01028">1028</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l01035">1035</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
 
 </div>
 </div>
@@ -722,7 +755,7 @@ Protected Attributes</h2></td></tr>
 <p>Prepare a freshly-installed site with some dummy data for site editors. </p>
 <p>This is sample code, not intended to be used as-is, but intended to be implemented in your RoboFile.php. It's not an abstract function, because its implementation shouldn't be required, and I wanted to add sample code. </p>
 
-<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l00877">877</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l00884">884</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
 
 </div>
 </div>
@@ -744,7 +777,7 @@ Protected Attributes</h2></td></tr>
 <p>Prepare your local machine for development. </p>
 <p>Pulls the database of truth, brings the database in line with local config, and enables local development modules, including config suite. </p>
 
-<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l00847">847</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l00854">854</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
 
 </div>
 </div>
@@ -767,7 +800,7 @@ Protected Attributes</h2></td></tr>
 <p>Run this command from a branch based off the last release tag on github. For example: git checkout my_last_release git checkout -b this_release_date robo pull:config git commit . git push</p>
 <p>Afterwards, make a PR against master for these changes and merge them. Do this BEFORE merging develop into master. </p>
 
-<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l00787">787</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tasks_8php_source.html#l00794">794</a> of file <a class="el" href="_tasks_8php_source.html">Tasks.php</a>.</p>
 
 </div>
 </div>
