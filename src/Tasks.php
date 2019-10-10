@@ -768,6 +768,13 @@ chmod 755 ' . $default_dir . '/settings.php';
       $result = $this->taskExec(implode(' && ', $drush_commands))
         ->run();
     }
+    if ($terminus_site_env === $pantheon_prefix . '.autoupdate') {
+      $drush_commands = [
+        'drush_update_database' => "terminus remote:drush $terminus_site_env -- updb -y",
+      ];
+      $this->taskExec(implode(' && ', $drush_commands))
+        ->run();
+    }
   }
 
   /**
@@ -1051,5 +1058,54 @@ chmod 755 ' . $default_dir . '/settings.php';
       $this->say('To use this command, you must either return a folder path from the migrationSourceFolder() method or set $usesMigrationPlugins to TRUE in your project\'s RoboFile.php.');
       return FALSE;
     }
+  }
+
+
+  /**
+   * Runs a "composer update" and pushes results to the "autoupdate" branch.
+   *
+   * This command should be ran after checking out the default branch of a
+   * project. If "composer update" results in any changed files, a force push
+   * is used to ensure that the "autoupdate" branch is only one commit ahead
+   * of the default branch.
+   *
+   * @param string $profile
+   *   A specific profile to update, ex: "thinkshout/bene".
+   *
+   * @return \Robo\Result
+   *   The last robo command's result.
+   */
+  public function ciUpdate($profile = NULL) {
+    $exec = $this->taskComposerUpdate()
+      ->option('with-dependencies');
+
+    if ($profile) {
+      $exec->arg($profile);
+    }
+
+    $result = $exec->run();
+
+    if (!$result->wasSuccessful()) return FALSE;
+
+    $result = $this->taskExec('git status -s')
+      ->interactive(FALSE)
+      ->run();
+
+    if (!$result->wasSuccessful()) return FALSE;
+
+    if (empty($result->getMessage())) {
+      $this->say('No updates to commit.');
+      return $result;
+    }
+
+    $result = $this->taskExec('git checkout -b autoupdate && git add . && git commit -m "Ran automatic updates." && git push --force -u origin autoupdate')
+      ->run();
+
+    if ($result->wasSuccessful()) {
+      $this->say('Update complete');
+      return $result;
+    }
+
+    return $result;
   }
 }
