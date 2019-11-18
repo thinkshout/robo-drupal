@@ -531,7 +531,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     $result = $this->taskExec($install_cmd)
       ->run();
     // Put the site back into git mode.
-    $this->_exec("terminus connection:set $terminus_site_env git");
+    $this->_exec("terminus connection:set $terminus_site_env git --yes");
 
     if ($result->wasSuccessful()) {
       $this->say('Install complete');
