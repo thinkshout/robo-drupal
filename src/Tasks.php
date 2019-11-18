@@ -565,6 +565,11 @@ chmod 755 ' . $default_dir . '/settings.php';
     return $this->test(['profile' => 'pantheon', 'feature' => $opts['feature']]);
   }
 
+  /**
+   * Returns the project properties from the .env file.
+   *
+   * @return array
+   */
   protected function getProjectProperties() {
 
     $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin'];
@@ -619,8 +624,13 @@ chmod 755 ' . $default_dir . '/settings.php';
     return $properties;
   }
 
-  /*
-   * See Symfony\Component\Console\Input.
+  /**
+   * Escapes the string for argument use.
+   *
+   * @param $string
+   *
+   * @return string
+   * @see Symfony\Component\Console\Input.
    */
   protected function escapeArg($string) {
     return preg_match('{^[\w-]+$}', $string) ? $string : escapeshellarg($string);
