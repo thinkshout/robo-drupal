@@ -16,6 +16,9 @@ class Tasks extends \Robo\Tasks
    */
   protected $usesMigrationPlugins = FALSE;
 
+  /**
+   * {@inheritdoc}
+   */
   function __construct() {
     $this->projectProperties = $this->getProjectProperties();
   }
