@@ -835,7 +835,7 @@ chmod 755 ' . $default_dir . '/settings.php';
         'drush_clear_cache' => 'drush cr',
         'drush_update_database' => 'drush updb',
         'drush_grab_config_changes' => 'drush config-import -y',
-        'drush_grab_config_local_changes' => 'drush config-split:import local -y',
+        'drush_grab_config_local_changes' => 'drush config-split:import config_local -y',
       ];
       $this->taskExec(implode(' && ', $drush_commands))
         ->dir($project_properties['web_root'])
