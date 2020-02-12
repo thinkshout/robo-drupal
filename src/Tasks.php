@@ -276,6 +276,13 @@ class Tasks extends \Robo\Tasks
       ->preferDist()
       ->run();
 
+    // Check out sites/default/files symlink to protect it.
+    $this->taskGitStack()
+      ->stopOnFail()
+      ->dir("$tmpDir/deploy")
+      ->checkout("web/sites/default/files")
+      ->run();
+
     $this->taskGitStack()
       ->stopOnFail()
       ->dir("$tmpDir/deploy")
