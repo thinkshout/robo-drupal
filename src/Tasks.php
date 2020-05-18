@@ -958,7 +958,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     $this->say('If you need the very latest data from a Pantheon site, go create a new backup using either the Pantheon backend, or Terminus.');
 
     $which_database = $this->askDefault(
-      'Which database backup should we load (i.e. local/dev/live)?', $default_database
+      'Which database backup should we load (i.e. local/develop/multidev/live)?', $default_database
     );
 
     $getDB = TRUE;
