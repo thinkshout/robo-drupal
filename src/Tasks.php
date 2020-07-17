@@ -173,10 +173,10 @@ class Tasks extends \Robo\Tasks
     $branch = $this->projectProperties['branch'];
 
     // Production Branch
-    $this->projectProperties['prod_branch'] = $this->projectProperties['prod-branch'];
+    $prod_branch = $this->projectProperties['prod-branch'];
 
     // Terminus env
-    $this->projectProperties['terminus_env'] = ($branch == 'master') ? 'dev' : $branch;
+    $this->projectProperties['terminus_env'] = ($branch == $prod_branch) ? 'dev' : $branch;
 
     $json_settings = json_encode($settings);
 
@@ -200,7 +200,7 @@ class Tasks extends \Robo\Tasks
     // If branch was specified, write it out to the .env file for future runs.
     $this->taskWriteToFile('.env')
       ->append()
-      ->line('TS_PROD_BRANCH=' . $this->projectProperties['prod_branch'])
+      ->line('TS_PROD_BRANCH=' . $prod_branch)
       ->run();
 
     // If profile was specified, write it out to the .env file for future runs.
