@@ -494,6 +494,8 @@ class Tasks extends \Robo\Tasks
     $this->_exec("terminus connection:set $terminus_site_env git");
 
     // Deployment
+    // In this case, "master" is pantheon primary branch, not our local branch,
+    // so we are unable to excise this archaic branch name.
     $pantheon_branch = $terminus_env == 'dev' ? 'master' : $terminus_env;
     $this->deploy($pantheon_branch);
 
@@ -585,7 +587,15 @@ chmod 755 ' . $default_dir . '/settings.php';
    */
   protected function getProjectProperties() {
 
-    $properties = ['project' => '', 'hash_salt' => '', 'config_dir' => '', 'host_repo' => '', 'install_profile' => 'standard', 'admin_name' => 'admin'];
+    $properties = [
+      'project' => '',
+      'hash_salt' => '',
+      'config_dir' => '',
+      'host_repo' => '',
+      'install_profile' => 'standard',
+      'admin_name' => 'admin',
+      'prod_branch' => 'production',
+    ];
 
     $properties['working_dir'] = getcwd();
 
@@ -811,8 +821,9 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   git commit .
    *   git push
    *
-   * Afterwards, make a PR against master for these changes and merge them.
-   * Do this BEFORE merging develop into master.
+   * Afterwards, make a PR against production branch for these changes and merge
+   * them.
+   * Do this BEFORE merging develop branch into prod branch.
    */
   public function pullConfig() {
     $project_properties = $this->getProjectProperties();
@@ -864,7 +875,7 @@ chmod 755 ' . $default_dir . '/settings.php';
         ->checkout('config-local')
         ->run();
 
-      $this->yell('"'. $this->databaseSourceOfTruth() . '" site config exported to your local. Commit this branch and make a PR against master. Don\'t forget to `robo install` again before resuming development!');
+      $this->yell('"'. $this->databaseSourceOfTruth() . '" site config exported to your local. Commit this branch and make a PR against ' . $project_properties['prod_branch'] . '. Don\'t forget to `robo install` again before resuming development!');
     }
   }
 
