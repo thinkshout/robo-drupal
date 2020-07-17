@@ -106,6 +106,7 @@ class Tasks extends \Robo\Tasks
     'branch' => NULL,
     'profile' => 'standard',
     'db-upgrade' => NULL,
+    'prod-branch' => 'production',
   ]) {
 
     $settings = $this->getDefaultPressflowSettings();
@@ -171,6 +172,9 @@ class Tasks extends \Robo\Tasks
     // Branch
     $branch = $this->projectProperties['branch'];
 
+    // Production Branch
+    $this->projectProperties['prod_branch'] = $this->projectProperties['prod-branch'];
+
     // Terminus env
     $this->projectProperties['terminus_env'] = ($branch == 'master') ? 'dev' : $branch;
 
@@ -191,6 +195,12 @@ class Tasks extends \Robo\Tasks
     $this->taskWriteToFile('.env')
       ->append()
       ->line('TS_BRANCH=' . $branch)
+      ->run();
+
+    // If branch was specified, write it out to the .env file for future runs.
+    $this->taskWriteToFile('.env')
+      ->append()
+      ->line('TS_PROD_BRANCH=' . $this->projectProperties['prod_branch'])
       ->run();
 
     // If profile was specified, write it out to the .env file for future runs.
