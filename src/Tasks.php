@@ -106,7 +106,7 @@ class Tasks extends \Robo\Tasks
     'branch' => NULL,
     'profile' => 'standard',
     'db-upgrade' => NULL,
-    'prod-branch' => 'production',
+    'prod-branch' => 'main',
   ]) {
 
     $settings = $this->getDefaultPressflowSettings();
@@ -594,7 +594,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       'host_repo' => '',
       'install_profile' => 'standard',
       'admin_name' => 'admin',
-      'prod_branch' => 'production',
+      'prod_branch' => 'main',
     ];
 
     $properties['working_dir'] = getcwd();
