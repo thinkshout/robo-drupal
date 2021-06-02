@@ -236,10 +236,6 @@ class Tasks extends \Robo\Tasks
       ->mkdir("$tmpDir/$hostDirName")
       ->run();
 
-    // Make sure we have an empty temp dir.
-    $this->taskCleanDir([$tmpDir])
-      ->run();
-
     // Git checkout of the matching remote branch.
     $this->taskGitStack()
       ->stopOnFail()
