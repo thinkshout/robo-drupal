@@ -233,14 +233,18 @@ class Tasks extends \Robo\Tasks
     $this->stopOnFail();
     $fs = $this->taskFilesystemStack()
       ->mkdir($tmpDir)
-      ->mkdir("$tmpDir/$hostDirName")
       ->run();
 
-    // Git checkout of the matching remote branch.
+    // Make sure we have an empty temp dir.
+    $this->taskCleanDir([$tmpDir])
+      ->run();
+
     $this->taskGitStack()
       ->stopOnFail()
       ->cloneRepo($repo, "$tmpDir/$hostDirName")
-      ->dir("$tmpDir/$hostDirName")
+      ->run();
+
+    $this->taskGitStack()->dir("$tmpDir/$hostDirName")
       ->checkout($pantheon_branch)
       ->run();
 
