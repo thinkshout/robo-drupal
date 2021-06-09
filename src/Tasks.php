@@ -244,6 +244,7 @@ class Tasks extends \Robo\Tasks
       ->cloneRepo($repo, "$tmpDir/$hostDirName")
       ->run();
 
+    // Git checkout of the matching remote branch.
     $this->taskGitStack()->dir("$tmpDir/$hostDirName")
       ->checkout($pantheon_branch)
       ->run();
