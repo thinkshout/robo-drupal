@@ -824,58 +824,45 @@ chmod 755 ' . $default_dir . '/settings.php';
    * Afterwards, make a PR against production branch for these changes and merge
    * them.
    * Do this BEFORE merging develop branch into prod branch.
+   *
+   * @return \Robo\Result|null
+   * @throws \Robo\Exception\TaskException
    */
   public function pullConfig() {
-    $project_properties = $this->getProjectProperties();
     $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
+    $site = getenv('TERMINUS_SITE');
 
-    $terminus_backup_timestamp = $this->taskExec('terminus backup:info ' . $terminus_site_env . ' --field="date"')
-                                 ->dir($project_properties['web_root'])
-                                 ->interactive(false)
-                                 ->run();
+    $can_access_drush = $this->taskExecStack()
+      ->exec('drush sa @pantheon.' . $terminus_site_env)
+      ->printOutput(false)
+      ->stopOnFail(FALSE)
+      ->run();
 
-    $this->say("To pull the latest config, you should use a current database backup.");
-    if($terminus_backup_timestamp->wasSuccessful()) {
-      $this->say("The most recent backup is from " . date('r', intval($terminus_backup_timestamp->getMessage())));
+    if($can_access_drush->wasSuccessful()) {
+      $this->say("You can access " . $terminus_site_env . " via drush!" );
+
+      $success = $this->taskExecStack()
+        ->exec('drush cpull @pantheon.' . $terminus_site_env . ' @self')->run();
+
+      return $success;
     }
     else {
-      $this->say("A recent backup was not found.");
-    }
+      $email = $this->ask("You can't access " . $terminus_site_env . " via drush! Enter the email address associated with your Pantheon user to be added to the site, or n/N to cancel.");
+      if ($email !== 'n' && $email !== 'N') {
+        $this->taskExec('terminus site:team:add ' . $site . ' ' . $email)
+          ->run();
 
-    $grab_database = $this->confirm("Create a new backup now?");
-    if ($grab_database == 'y') {
-      $terminus_url_request = $this->taskExec('terminus backup:create ' . $terminus_site_env . ' --element="db"')
-        ->dir($project_properties['web_root'])
-        ->interactive(false)
-        ->run();
+        $this->taskExec('terminus aliases')
+          ->run();
 
-      if (!$terminus_url_request->wasSuccessful()) {
-        $this->yell('Could not make a Database backup of "'. $terminus_site_env . '"! See if you can make one manually.');
-        return FALSE;
+        $this->taskExec('terminus site:team:remove ' . $site . ' ' . $email)
+          ->run();
+
+        $success = $this->taskExecStack()
+          ->exec('drush cpull @pantheon.' . $terminus_site_env . ' @self')->run();
+
+        return $success;
       }
-    }
-
-    $do_composer_install = $this->downloadPantheonBackup($this->databaseSourceOfTruth());
-
-    if ($do_composer_install && $this->importLocal()) {
-      $this->taskComposerInstall()
-        ->optimizeAutoloader()
-        ->run();
-      $drush_commands = [
-        'drush_clear_cache_again' => 'drush cr',
-        'drush_grab_config_changes' => 'drush config-export -y',
-      ];
-      $this->taskExec(implode(' && ', $drush_commands))
-        ->dir($project_properties['web_root'])
-        ->run();
-
-      // Ignore config-local changes -- the $database_of_truth site doesn't know about them.
-      $this->taskGitStack()
-        ->stopOnFail()
-        ->checkout('config-local')
-        ->run();
-
-      $this->yell('"'. $this->databaseSourceOfTruth() . '" site config exported to your local. Commit this branch and make a PR against ' . $project_properties['prod_branch'] . '. Don\'t forget to `robo install` again before resuming development!');
     }
   }
 
