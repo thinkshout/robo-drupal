@@ -965,11 +965,11 @@ chmod 755 ' . $default_dir . '/settings.php';
    * @return bool
    *   If the remote database was reached and downloaded, return TRUE.
    */
-  private function getDatabaseOfTruth() {
+  protected function getDatabaseOfTruth() {
     $project_properties = $this->getProjectProperties();
     $default_database = $this->databaseSourceOfTruth();
 
-    if (file_exists('vendor/database.sql.gz')) {
+    if (file_exists('vendor/database.sql.gz') || file_exists('vendor/database.sql')) {
       $default_database = 'local';
     }
 
