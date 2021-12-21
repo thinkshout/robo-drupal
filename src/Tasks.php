@@ -1009,7 +1009,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    * Grabs a backup from Pantheon.
    *
    * @param $env
-   *   The environemnt to get the backup from.
+   *   The environment to get the backup from.
    *
    * @return bool
    *   True if the backup was downloaded.
@@ -1042,7 +1042,7 @@ chmod 755 ' . $default_dir . '/settings.php';
   }
 
   /**
-   * Imports a local database.
+   * Imports a local database using mysql rather than zcat.
    *
    * @return bool
    *   True if import succeeded.
@@ -1050,19 +1050,25 @@ chmod 755 ' . $default_dir . '/settings.php';
   public function importLocal() {
     $project_properties = $this->getProjectProperties();
 
+    $web_root = $project_properties['web_root'];
+    $sql_db = $project_properties['db-name'];
+    $sql_user = $project_properties['db-user'];
+    $sql_pass = $project_properties['db-pass'];
     // Empty out the old database so deleted tables don't stick around.
-    $this->taskExec('drush sql:drop -y')->dir($project_properties['web_root'])->run();
-
-    $drush_commands    = [
-      'drush_import_database' => 'zcat < ../vendor/database.sql.gz | drush @self sqlc # Importing local copy of db.'
+    $this->taskExec('drush sql:drop -y')->dir($web_root)->run();
+    if (file_exists('vendor/database.sql.gz')) {
+      $this->taskExec('gunzip ../vendor/database.sql.gz')->dir($web_root)->run();
+    }
+    $import_commands    = [
+      'drush_import_database' => "mysql -u$sql_user -p$sql_pass $sql_db < ../vendor/database.sql # Importing local copy of db."
     ];
-    $database_import = $this->taskExec(implode(' && ', $drush_commands))->dir($project_properties['web_root'])->run();
+    $database_import = $this->taskExec(implode(' && ', $import_commands))->dir($web_root)->run();
 
     if ($database_import->wasSuccessful()) {
       return TRUE;
     }
     else {
-      $this->yell('Could not read vendor/database.sql.gz into your local database. See if the command "zcat < vendor/database.sql.gz | drush @self sqlc" works outside of robo.');
+      $this->yell("Could not read vendor/database.sql into your local database. See if the command 'mysql -u$sql_user -p$sql_pass $sql_db < vendor/database.sql' works outside of robo.");
       return FALSE;
     }
   }
