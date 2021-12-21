@@ -1048,6 +1048,11 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   True if import succeeded.
    */
   public function importLocal() {
+    if (!$this->taskExec('which pv')->run()->wasSuccessful()) {
+      $this->yell("This project's database can take up to an hour to import. So that you can be informed of its progress, please install the pv tool with 'brew install pv', then run your command again.");
+      return FALSE;
+    }
+
     $project_properties = $this->getProjectProperties();
 
     $web_root = $project_properties['web_root'];
@@ -1060,7 +1065,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       $this->taskExec('gunzip ../vendor/database.sql.gz')->dir($web_root)->run();
     }
     $import_commands    = [
-      'drush_import_database' => "mysql -u$sql_user -p$sql_pass $sql_db < ../vendor/database.sql # Importing local copy of db."
+      'drush_import_database' => "pv ../vendor/database.sql | mysql -u$sql_user -p$sql_pass $sql_db # Importing local copy of db."
     ];
     $database_import = $this->taskExec(implode(' && ', $import_commands))->dir($web_root)->run();
 
