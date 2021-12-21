@@ -635,7 +635,13 @@ chmod 755 ' . $default_dir . '/settings.php';
       $properties['branch'] = trim($branch);
     }
 
-    if ($db_name = getenv('TS_DB_NAME')) {
+    if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
+      $db_settings = json_decode($system_defaults, TRUE)['databases']['default']['default'];
+      $properties['db-name'] = $db_settings['database'];
+      $properties['db-user'] = $db_settings['username'];
+      $properties['db-pass'] = $db_settings['password'];
+    }
+    elseif ($db_name = getenv('TS_DB_NAME')) {
       $properties['db-name'] = $db_name;
     }
     else {
