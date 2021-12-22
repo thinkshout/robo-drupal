@@ -975,7 +975,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     $project_properties = $this->getProjectProperties();
     $default_database = $this->databaseSourceOfTruth();
 
-    if (file_exists('vendor/database.sql.gz') || file_exists('vendor/database.sql')) {
+    if (file_exists('vendor/database.sql.gz')) {
       $default_database = 'local';
     }
 
@@ -1056,16 +1056,12 @@ chmod 755 ' . $default_dir . '/settings.php';
     $project_properties = $this->getProjectProperties();
 
     $web_root = $project_properties['web_root'];
-    $sql_db = $project_properties['db-name'];
-    $sql_user = $project_properties['db-user'];
-    $sql_pass = $project_properties['db-pass'];
+
     // Empty out the old database so deleted tables don't stick around.
     $this->taskExec('drush sql:drop -y')->dir($web_root)->run();
-    if (file_exists('vendor/database.sql.gz')) {
-      $this->taskExec('gunzip ../vendor/database.sql.gz')->dir($web_root)->run();
-    }
+
     $import_commands    = [
-      'drush_import_database' => "pv ../vendor/database.sql | mysql -u$sql_user -p$sql_pass $sql_db # Importing local copy of db."
+      'drush_import_database' => "pv ../vendor/database.sql.gz | zcat | $(drush sql:connect) # Importing local copy of db."
     ];
     $database_import = $this->taskExec(implode(' && ', $import_commands))->dir($web_root)->run();
 
@@ -1073,7 +1069,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       return TRUE;
     }
     else {
-      $this->yell("Could not read vendor/database.sql into your local database. See if the command 'mysql -u$sql_user -p$sql_pass $sql_db < vendor/database.sql' works outside of robo.");
+      $this->yell("Could not read vendor/database.sql.gz into your local database. See if the command 'pv vendor/database.sql.gz | zcat | $(drush sql:connect)' works outside of robo.");
       return FALSE;
     }
   }
