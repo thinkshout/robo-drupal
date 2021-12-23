@@ -1042,7 +1042,7 @@ chmod 755 ' . $default_dir . '/settings.php';
   }
 
   /**
-   * Imports a local database using mysql rather than zcat.
+   * Imports a local database.
    *
    * @return bool
    *   True if import succeeded.
