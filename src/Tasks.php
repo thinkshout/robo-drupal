@@ -2,6 +2,7 @@
 
 namespace ThinkShout\RoboDrupal;
 
+use Dotenv\Dotenv;
 use Drupal\Component\Utility\Crypt;
 use Symfony\Component\Process\Process;
 
@@ -603,8 +604,9 @@ chmod 755 ' . $default_dir . '/settings.php';
     // Load .env file from the local directory if it exists. Or use the .env.dist
     $env_file = (file_exists($properties['working_dir'] . '/.env')) ? '.env' : '.env.dist';
 
-    $dotenv = new \Dotenv\Dotenv($properties['working_dir'], $env_file);
-    $dotenv->load();
+
+    $dotenv = Dotenv::createUnsafeImmutable($properties['working_dir'], $env_file);
+    $dotenv->safeLoad();
 
     array_walk($properties, function(&$var, $key) {
       $env_var = strtoupper('TS_' . $key);
