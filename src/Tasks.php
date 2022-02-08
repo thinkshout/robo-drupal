@@ -606,7 +606,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
 
     $dotenv = Dotenv::createUnsafeImmutable($properties['working_dir'], $env_file);
-    $dotenv->load();
+    $dotenv->safeLoad();
 
     array_walk($properties, function(&$var, $key) {
       $env_var = strtoupper('TS_' . $key);
