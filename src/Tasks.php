@@ -925,7 +925,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       ];
       $config_splits = $this->getConfigSplits();
       foreach ($config_splits as $split) {
-          $drush_commands[$split] =  'drush config-split:activate ' . $split . ' -y',
+        $drush_commands[$split] =  'drush config-split:activate ' . $split . ' -y';
       }
       $this->taskExec(implode(' && ', $drush_commands))
         ->dir($project_properties['web_root'])
