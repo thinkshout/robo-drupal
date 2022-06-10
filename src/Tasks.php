@@ -927,6 +927,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       foreach ($config_splits as $split) {
         $drush_commands[$split] =  'drush config-split:activate ' . $split . ' -y';
       }
+      $drush_commands['drush_assert_configurations'] = 'drush cex -y';
       $this->taskExec(implode(' && ', $drush_commands))
         ->dir($project_properties['web_root'])
         ->run();
