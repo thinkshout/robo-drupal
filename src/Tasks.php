@@ -35,6 +35,19 @@ class Tasks extends \Robo\Tasks
     return 'live';
   }
 
+    /**
+     * Determines the names of local config to enable during robo install.
+     *
+     * Each site can overwrite this if their config splits are not 'local'
+     * or if they have multiple splits.
+     *
+     * @return mixed
+     *   Return the list of config-split elements to activate on robo install.
+     */
+    protected function getConfigSplits() {
+        return ['local'];
+    }
+
   /**
    * Determines the migration folder to pull config from.
    *
@@ -909,8 +922,12 @@ chmod 755 ' . $default_dir . '/settings.php';
         'drush_clear_cache' => 'drush cr',
         'drush_update_database' => 'drush updb -y',
         'drush_grab_config_changes' => 'drush config-import -y',
-        'drush_grab_config_local_changes' => 'drush config-split:import local -y',
       ];
+      $config_splits = $this->getConfigSplits();
+      foreach ($config_splits as $split) {
+        $drush_commands[$split] =  'drush config-split:activate ' . $split . ' -y';
+      }
+      $drush_commands['drush_assert_configurations'] = 'drush cex -y';
       $this->taskExec(implode(' && ', $drush_commands))
         ->dir($project_properties['web_root'])
         ->run();
