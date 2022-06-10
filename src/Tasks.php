@@ -921,7 +921,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       $drush_commands = [
         'drush_clear_cache' => 'drush cr',
         'drush_update_database' => 'drush updb -y',
-        'drush_grab_config_changes' => 'drush config-import -y'
+        'drush_grab_config_changes' => 'drush config-import -y',
       ];
       $config_splits = $this->getConfigSplits();
       foreach ($config_splits as $split) {
