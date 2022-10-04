@@ -412,6 +412,11 @@ class Tasks extends \Robo\Tasks
 
     $behat_result = $behat_cmd->run();
 
+    if (!$behat_result->wasSuccessful()){
+      // Print out a debugging message.
+      $this->say('You just had a behat test fail! See https://library.thinkshoutlabs.com/articles/fixing-failing-behat-tests-locally-circleci for tips on how to fix this!');
+    }
+
     return $behat_result;
   }
 
