@@ -399,7 +399,8 @@ class Tasks extends \Robo\Tasks
     $behat_cmd = $this->taskExec('behat')
       ->option('config', 'behat/behat.' . $opts['profile'] . '.yml')
       ->option('profile', $opts['profile'])
-      ->option('format', 'progress');
+      ->option('format', 'progress')
+      ->option('stop-on-failure');
 
     if ($opts['feature']) {
       $behat_cmd->rawArg($opts['feature']);
@@ -411,15 +412,12 @@ class Tasks extends \Robo\Tasks
 
     $behat_result = $behat_cmd->run();
 
-    return $behat_result;
+    if (!$behat_result->wasSuccessful()){
+      // Print out a debugging message.
+      $this->say('You just had a behat test fail! See https://library.thinkshoutlabs.com/articles/fixing-failing-behat-tests-locally-circleci for tips on how to fix this!');
+    }
 
-    // @TODO consider adding unit tests back in. These are slow and aren't working great right now.
-//    $unit_result = $this->taskPHPUnit('../vendor/bin/phpunit')
-//      ->dir('core')
-//      ->run();
-//
-//    // @TODO will need to address multiple results when we enable other tests as well.
-//    return $behat_result->merge($unit_result);
+    return $behat_result;
   }
 
   /**
