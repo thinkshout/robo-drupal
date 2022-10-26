@@ -6,7 +6,7 @@ use Dotenv\Dotenv;
 use Drupal\Component\Utility\Crypt;
 use Symfony\Component\Process\Process;
 
-trait Tasks extends \Robo\Tasks
+trait Tasks
 {
   private $projectProperties;
 
