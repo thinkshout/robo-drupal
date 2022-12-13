@@ -638,7 +638,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     if (!isset($properties['branch'])) {
       // Get the current branch using the simple exec command.
       $command = 'git symbolic-ref --short -q HEAD';
-      $process = new Process($command);
+      $process = new Process([$command]);
       $process->setTimeout(NULL);
       $process->setWorkingDirectory($properties['working_dir']);
       $process->run();
