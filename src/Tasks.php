@@ -282,7 +282,7 @@ class Tasks extends \Robo\Tasks
       ->exclude('.gitignore')
       ->exclude('sites/default/settings.local.php')
       ->exclude('sites/default/files')
-      ->printed(FALSE)
+      ->printOutput(FALSE)
       ->run();
 
     // Move host .git into our deployment directory.
@@ -290,7 +290,7 @@ class Tasks extends \Robo\Tasks
       ->fromPath("$tmpDir/$hostDirName/.git")
       ->toPath("$tmpDir/deploy")
       ->args('-a', '-v', '-z', '--no-group', '--no-owner')
-      ->printed(FALSE)
+      ->printOutput(FALSE)
       ->run();
 
     // Rerun composer install for optimization and no dev items.
@@ -638,7 +638,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     if (!isset($properties['branch'])) {
       // Get the current branch using the simple exec command.
       $command = 'git symbolic-ref --short -q HEAD';
-      $process = new Process($command);
+      $process = Process::fromShellCommandline($command);
       $process->setTimeout(NULL);
       $process->setWorkingDirectory($properties['working_dir']);
       $process->run();
