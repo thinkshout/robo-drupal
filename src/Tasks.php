@@ -76,20 +76,15 @@ trait Tasks
 
     $find_replaces = array(
       array(
-        'source' => 'composer.json',
-        'from' => '"name": "thinkshout/drupal-project",',
-        'to' => '"name": "thinkshout/' . $git_repo . '",',
+        'source' => '.env.dist',
+        'from' => 'SITE',
+        'to' => $git_repo,
       ),
       array(
         'source' => '.env.dist',
-        'from' => 'TS_PROJECT="SITE"',
-        'to' => 'TS_PROJECT="' . $git_repo . '"',
-      ),
-      array(
-        'source' => 'README.md',
-        'from' => array($from, 'new-project-name'),
-        'to' => array($end_string, $git_repo),
-      ),
+        'from' => 'DRUSH_OPTIONS_URI=""',
+        'to' => 'DRUSH_OPTIONS_URI="web.' . $git_repo . '.localhost',
+      )
     );
 
     foreach ($find_replaces as $find_replace) {
