@@ -22,5 +22,19 @@
         "drupal/config_split": "^2.0",
         "drush/drush": "^9.6|^10.0|^11.1",
         "genesis/behat-fail-aid": "^3.7"
+    },
+    "extra": {
+        "drupal-scaffold": {
+            "file-mapping": {
+                "[project-root]/.env.dist": {
+                    "path": "assets/.env.dist",
+                    "overwrite": false
+                },
+                "[project-root]/RoboFile.php": {
+                    "path": "assets/RoboFile.php",
+                    "overwrite": false
+                }
+            }
+        }
     }
 }
