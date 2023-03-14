@@ -4,6 +4,6 @@
  *
  * @see http://robo.li/
  */
+use ThinkShout\RoboDrupal\Tasks;
 
-
-class RoboFile extends \ThinkShout\RoboDrupal\Tasks {}
+class RoboFile extends Tasks {}

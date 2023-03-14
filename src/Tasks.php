@@ -4,10 +4,10 @@ namespace ThinkShout\RoboDrupal;
 
 use Dotenv\Dotenv;
 use Drupal\Component\Utility\Crypt;
+use Robo\Tasks as RoboTasks;
 use Symfony\Component\Process\Process;
 
-trait Tasks
-{
+class Tasks extends RoboTasks {
   private $projectProperties;
 
   /**
