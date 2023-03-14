@@ -77,7 +77,7 @@ trait Tasks
       array(
         'source' => '.env.dist',
         'from' => 'DRUSH_OPTIONS_URI=""',
-        'to' => 'DRUSH_OPTIONS_URI="https://web.' . $git_repo . '.localhost',
+        'to' => 'DRUSH_OPTIONS_URI="https://web.' . $git_repo . '.localhost"',
       )
     );
 
