@@ -1,7 +1,7 @@
 {
     "name": "thinkshout/robo-drupal",
     "description": "Robo Tasks for Drupal projects",
-    "type": "library",
+    "type": "project",
     "license": "GPL-2.0+",
     "authors": [
         {
@@ -9,6 +9,9 @@
             "email": "tauno@thinkshout.com"
         }
     ],
+    "conflict": {
+        "drupal/core": "<9"
+    },
     "autoload":
     {
         "psr-4":
