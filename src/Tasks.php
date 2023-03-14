@@ -68,12 +68,6 @@ trait Tasks
   public function init() {
     $git_repo = exec('basename `git rev-parse --show-toplevel`');
 
-    // Remove instructions for creating a new repo, because we've got one now.
-    $readme_contents = file_get_contents('README.md');
-    $start_string = '### Initial build (new repo)';
-    $end_string = '### Initial build (existing repo)';
-    $from = $this->findAllTextBetween($start_string, $end_string, $readme_contents);
-
     $find_replaces = array(
       array(
         'source' => '.env.dist',
@@ -228,6 +222,8 @@ trait Tasks
    * We use this to deploy code to a specific multidev for Pantheon deployments
    * which we need for automated visual regression testing. In that case, the
    * source (feature) branch gets deployed to the vr-dev branch/multidev.
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   public function deploy($pantheon_branch = NULL) {
 
@@ -770,28 +766,6 @@ chmod 755 ' . $default_dir . '/settings.php';
   }
 
   /**
-   * Finds the text between two strings within a third string.
-   *
-   * @param $beginning
-   * @param $end
-   * @param $string
-   *
-   * @return string
-   *   String containing $beginning, $end, and everything in between.
-   */
-  private function findAllTextBetween($beginning, $end, $string) {
-    $beginningPos = strpos($string, $beginning);
-    $endPos = strpos($string, $end);
-    if ($beginningPos === false || $endPos === false) {
-      return '';
-    }
-
-    $textToDelete = substr($string, $beginningPos, ($endPos + strlen($end)) - $beginningPos);
-
-    return $textToDelete;
-  }
-
-  /**
    * Clean up state of Pantheon dev & develop environments after deploying.
    *
    * Run this by adding the line:
@@ -801,6 +775,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    * robo pantheon:deploy --y
    *
    * in your .circleci/config.yml file.
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   public function postDeploy() {
     $terminus_site_env = $this->getPantheonSiteEnv();
