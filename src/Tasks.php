@@ -71,8 +71,8 @@ trait Tasks
     $find_replaces = array(
       array(
         'source' => '.env.dist',
-        'from' => 'SITE',
-        'to' => $git_repo,
+        'from' => '"SITE"',
+        'to' => '"' . $git_repo . '"',
       ),
       array(
         'source' => '.env.dist',
