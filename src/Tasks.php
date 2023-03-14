@@ -463,6 +463,7 @@ trait Tasks
    * testing.
    *
    * @return \Robo\Result
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   public function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE, 'pantheon-branch' => NULL]) {
     $terminus_site     = getenv('TERMINUS_SITE');
@@ -514,6 +515,8 @@ trait Tasks
    * Install site on Pantheon.
    *
    * @return \Robo\Result
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   public function pantheonInstall() {
     $admin_name = $this->projectProperties['admin_name'];
@@ -568,6 +571,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   Ex: --feature=features/user.feature.
    *
    * @return \Robo\Result
+   *
+   * @deprecated deprecated since version 4.0. Run tests on circle.
    */
   public function pantheonTest($opts = ['feature' => NULL]) {
     $project     = getenv('TERMINUS_SITE');
@@ -671,20 +676,6 @@ chmod 755 ' . $default_dir . '/settings.php';
   }
 
   /**
-   * Use regex to replace a 'key' => 'value', pair in a file like a settings file.
-   *
-   * @param $file
-   * @param $key
-   * @param $value
-   */
-  protected function replaceArraySetting($file, $key, $value) {
-    $this->taskReplaceInFile($file)
-      ->regex("/'$key' => '[^'\\\\]*(?:\\\\.[^'\\\\]*)*',/s")
-      ->to("'$key' => '". $value . "',")
-      ->run();
-  }
-
-  /**
    * Get "<site>.<env>" commonly used in terminus commands.
    */
   protected function getPantheonSiteEnv($env = '') {
@@ -701,6 +692,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    * Build temp folder path for the task.
    *
    * @return string
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   protected function getTmpDir() {
     return realpath(sys_get_temp_dir()) . DIRECTORY_SEPARATOR . 'drupal-deploy-' . time();
@@ -712,6 +705,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    * moving them to their final destination in the project).
    *
    * @return string
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   protected function getFetchDirName() {
     return 'host';
