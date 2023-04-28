@@ -1,7 +1,7 @@
 {
     "name": "thinkshout/robo-drupal",
     "description": "Robo Tasks for Drupal projects",
-    "type": "library",
+    "type": "project",
     "license": "GPL-2.0+",
     "authors": [
         {
@@ -9,6 +9,9 @@
             "email": "tauno@thinkshout.com"
         }
     ],
+    "conflict": {
+        "drupal/core": "<9"
+    },
     "autoload":
     {
         "psr-4":
@@ -19,9 +22,22 @@
     "require": {
         "vlucas/phpdotenv": ">=5.0",
         "consolidation/robo": "^3.0",
-        "consolidation/annotated-command": "<=4.5.6",
         "drupal/config_split": "^2.0",
         "drush/drush": "^9.6|^10.0|^11.1",
         "genesis/behat-fail-aid": "^3.7"
+    },
+    "extra": {
+        "drupal-scaffold": {
+            "file-mapping": {
+                "[project-root]/.env.dist": {
+                    "path": "assets/.env.dist",
+                    "overwrite": false
+                },
+                "[project-root]/RoboFile.php": {
+                    "path": "assets/RoboFile.php",
+                    "overwrite": false
+                }
+            }
+        }
     }
 }

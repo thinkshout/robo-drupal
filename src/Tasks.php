@@ -4,10 +4,10 @@ namespace ThinkShout\RoboDrupal;
 
 use Dotenv\Dotenv;
 use Drupal\Component\Utility\Crypt;
+use Robo\Tasks as RoboTasks;
 use Symfony\Component\Process\Process;
 
-class Tasks extends \Robo\Tasks
-{
+class Tasks extends RoboTasks {
   private $projectProperties;
 
   /**
@@ -68,28 +68,17 @@ class Tasks extends \Robo\Tasks
   public function init() {
     $git_repo = exec('basename `git rev-parse --show-toplevel`');
 
-    // Remove instructions for creating a new repo, because we've got one now.
-    $readme_contents = file_get_contents('README.md');
-    $start_string = '### Initial build (new repo)';
-    $end_string = '### Initial build (existing repo)';
-    $from = $this->findAllTextBetween($start_string, $end_string, $readme_contents);
-
     $find_replaces = array(
       array(
-        'source' => 'composer.json',
-        'from' => '"name": "thinkshout/drupal-project",',
-        'to' => '"name": "thinkshout/' . $git_repo . '",',
+        'source' => '.env.dist',
+        'from' => '"SITE"',
+        'to' => '"' . $git_repo . '"',
       ),
       array(
         'source' => '.env.dist',
-        'from' => 'TS_PROJECT="SITE"',
-        'to' => 'TS_PROJECT="' . $git_repo . '"',
-      ),
-      array(
-        'source' => 'README.md',
-        'from' => array($from, 'new-project-name'),
-        'to' => array($end_string, $git_repo),
-      ),
+        'from' => 'DRUSH_OPTIONS_URI=""',
+        'to' => 'DRUSH_OPTIONS_URI="https://web.' . $git_repo . '.localhost"',
+      )
     );
 
     foreach ($find_replaces as $find_replace) {
@@ -233,6 +222,8 @@ class Tasks extends \Robo\Tasks
    * We use this to deploy code to a specific multidev for Pantheon deployments
    * which we need for automated visual regression testing. In that case, the
    * source (feature) branch gets deployed to the vr-dev branch/multidev.
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   public function deploy($pantheon_branch = NULL) {
 
@@ -472,6 +463,7 @@ class Tasks extends \Robo\Tasks
    * testing.
    *
    * @return \Robo\Result
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   public function pantheonDeploy($opts = ['install' => FALSE, 'y' => FALSE, 'pantheon-branch' => NULL]) {
     $terminus_site     = getenv('TERMINUS_SITE');
@@ -523,6 +515,8 @@ class Tasks extends \Robo\Tasks
    * Install site on Pantheon.
    *
    * @return \Robo\Result
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   public function pantheonInstall() {
     $admin_name = $this->projectProperties['admin_name'];
@@ -577,6 +571,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    *   Ex: --feature=features/user.feature.
    *
    * @return \Robo\Result
+   *
+   * @deprecated deprecated since version 4.0. Run tests on circle.
    */
   public function pantheonTest($opts = ['feature' => NULL]) {
     $project     = getenv('TERMINUS_SITE');
@@ -680,20 +676,6 @@ chmod 755 ' . $default_dir . '/settings.php';
   }
 
   /**
-   * Use regex to replace a 'key' => 'value', pair in a file like a settings file.
-   *
-   * @param $file
-   * @param $key
-   * @param $value
-   */
-  protected function replaceArraySetting($file, $key, $value) {
-    $this->taskReplaceInFile($file)
-      ->regex("/'$key' => '[^'\\\\]*(?:\\\\.[^'\\\\]*)*',/s")
-      ->to("'$key' => '". $value . "',")
-      ->run();
-  }
-
-  /**
    * Get "<site>.<env>" commonly used in terminus commands.
    */
   protected function getPantheonSiteEnv($env = '') {
@@ -710,6 +692,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    * Build temp folder path for the task.
    *
    * @return string
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   protected function getTmpDir() {
     return realpath(sys_get_temp_dir()) . DIRECTORY_SEPARATOR . 'drupal-deploy-' . time();
@@ -721,6 +705,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    * moving them to their final destination in the project).
    *
    * @return string
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   protected function getFetchDirName() {
     return 'host';
@@ -775,28 +761,6 @@ chmod 755 ' . $default_dir . '/settings.php';
   }
 
   /**
-   * Finds the text between two strings within a third string.
-   *
-   * @param $beginning
-   * @param $end
-   * @param $string
-   *
-   * @return string
-   *   String containing $beginning, $end, and everything in between.
-   */
-  private function findAllTextBetween($beginning, $end, $string) {
-    $beginningPos = strpos($string, $beginning);
-    $endPos = strpos($string, $end);
-    if ($beginningPos === false || $endPos === false) {
-      return '';
-    }
-
-    $textToDelete = substr($string, $beginningPos, ($endPos + strlen($end)) - $beginningPos);
-
-    return $textToDelete;
-  }
-
-  /**
    * Clean up state of Pantheon dev & develop environments after deploying.
    *
    * Run this by adding the line:
@@ -806,6 +770,8 @@ chmod 755 ' . $default_dir . '/settings.php';
    * robo pantheon:deploy --y
    *
    * in your .circleci/config.yml file.
+   *
+   * @deprecated deprecated since version 4.0. Use Pantheon Build Tools.
    */
   public function postDeploy() {
     $terminus_site_env = $this->getPantheonSiteEnv();
