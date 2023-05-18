@@ -16,8 +16,12 @@ Once you have set a production branch, you can create a branch with that name fr
 3. If you don't have a `.env.dist` file in your project's root, run `robo init`.
 4. Run `robo configure`. This should create a `.env` file based on your `.env.dist` file. 
 5. Test out the configuration above by pulling down the live database:
-`robo pull:config # Makes a database backup and pulls it locally.`
-`robo install # Builds your local database - you can pull from "local"`
+```
+robo pull:config # Makes a database backup and pulls it locally.
+robo install # Builds your local database - you can pull from "local"
+```
 5. In your project's ".gitignore" file, add the ".env" file at the bottom, like so (you might just need to uncomment):
-`# Ignore generated config`
-`.env`
+```
+# Ignore generated config
+.env
+```
