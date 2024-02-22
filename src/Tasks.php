@@ -866,6 +866,40 @@ chmod 755 ' . $default_dir . '/settings.php';
   }
 
   /**
+   * Pull the config from the live site down to your local.
+   *
+   * Run this command from a branch based off the last release tag on github.
+   * For example:
+   *   git checkout my_last_release
+   *   git checkout -b this_release_date
+   *   robo pull:config
+   *   git commit .
+   *   git push
+   *
+   * Afterwards, make a PR against production branch for these changes and merge
+   * them.
+   * Do this BEFORE merging develop branch into prod branch.
+   */
+  public function pullConfigFast() {
+    $project_properties = $this->getProjectProperties();
+    $terminus_site_env  = $this->getPantheonSiteEnv($this->databaseSourceOfTruth());
+    $file_path = 'vendor/config-export.patch';
+    $regex_patch =
+
+    $terminus_backup_timestamp = $this->taskExec('terminus -n drush ' . $terminus_site_env . '.' . $this->databaseSourceOfTruth() . ' -- cex --diff > ' . $file_path)
+      ->dir($project_properties['web_root'])
+      ->interactive(false)
+      ->run();
+
+    $file_contents = file_get_contents($file_path);
+    $file_contents = str_replace("\nH", ",H", $file_contents);
+    file_put_contents($file_path, $file_contents);
+
+      $this->yell('"'. $this->databaseSourceOfTruth() . '" site config exported to your local. Commit this branch and make a PR against ' . $project_properties['prod_branch'] . '. Don\'t forget to `robo install` again before resuming development!');
+    }
+  }
+
+  /**
    * Prepare your local machine for development.
    *
    * Pulls the database of truth, brings the database in line with local config,
