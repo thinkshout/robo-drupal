@@ -97,6 +97,7 @@ class Tasks extends RoboTasks {
    *   db-user:    Database user.
    *   db-name:    Database name.
    *   db-host:    Database host.
+   *   db-port:    Database port.
    *   branch:     Git Branch.
    *   profile:    install profile.
    *   db-upgrade: local migration database name.
@@ -106,6 +107,7 @@ class Tasks extends RoboTasks {
     'db-user' => NULL,
     'db-name' => NULL,
     'db-host' => NULL,
+    'db-port' => NULL,
     'branch' => NULL,
     'profile' => 'standard',
     'db-upgrade' => NULL,
@@ -147,6 +149,10 @@ class Tasks extends RoboTasks {
     // Override DB host from project properties.
     if (isset($this->projectProperties['db-host'])) {
       $settings['databases']['default']['default']['host'] = $this->projectProperties['db-host'];
+    }
+
+    if (isset($this->projectProperties['db-port'])) {
+      $settings['databases']['default']['default']['port'] = $this->projectProperties['db-port'];
     }
 
     // Set Upgrade database.
