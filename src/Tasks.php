@@ -270,7 +270,6 @@ class Tasks extends RoboTasks {
       ->toPath("$tmpDir/deploy")
       ->args('-a', '-v', '-z', '--no-group', '--no-owner')
       ->excludeVcs()
-      ->exclude('.gitignore')
       ->exclude('sites/default/settings.local.php')
       ->exclude('sites/default/files')
       ->printOutput(FALSE)
