@@ -273,6 +273,7 @@ class Tasks extends RoboTasks {
         if(file_exists($this->projectProperties['working_dir'] . $filename)) {
             $build_on_pantheon = $this->taskExec('drush yaml:get:value ' . $filename . ' build_step')
                 ->run();
+            break;
         }
     }
 
