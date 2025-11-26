@@ -266,11 +266,11 @@ class Tasks extends RoboTasks {
 
     // Read in contents of pantheon.upstream.yml file, fallback to pantheon.yml file.
       $pantheon_yml_options = array(
-          'pantheon.yml' => '/pantheon.yml',
-          'pantheon.upstream.yml' => '/pantheon.upstream.yml',
+          'pantheon.yml' => 'pantheon.yml',
+          'pantheon.upstream.yml' => 'pantheon.upstream.yml',
       );
     foreach ($pantheon_yml_options as $filename) {
-        if(file_exists($this->projectProperties['working_dir'] . $filename)) {
+        if(file_exists($this->projectProperties['working_dir'] . DIRECTORY_SEPARATOR . $filename)) {
             $build_on_pantheon = $this->taskExec('drush yaml:get:value ' . $filename . ' build_step')
                 ->run();
             break;
