@@ -264,16 +264,41 @@ class Tasks extends RoboTasks {
 
     $commit_message = "Combined commits: \n" . $commit_message;
 
-    // Copy webroot to our deploy directory.
-    $this->taskRsync()
-      ->fromPath("./")
-      ->toPath("$tmpDir/deploy")
-      ->args('-a', '-v', '-z', '--no-group', '--no-owner')
-      ->excludeVcs()
-      ->exclude('sites/default/settings.local.php')
-      ->exclude('sites/default/files')
-      ->printOutput(FALSE)
-      ->run();
+    // Read in contents of pantheon.upstream.yml file, fallback to pantheon.yml file.
+      $pantheon_yml_options = array(
+          'pantheon.yml' => '/pantheon.yml',
+          'pantheon.upstream.yml' => '/pantheon.upstream.yml',
+      );
+    foreach ($pantheon_yml_options as $filename) {
+        if(file_exists($this->projectProperties['working_dir'] . $filename)) {
+            $build_on_pantheon = $this->taskExec('drush yaml:get:value ' . $filename . ' build_step')
+                ->run();
+        }
+    }
+
+    if ($build_on_pantheon) {
+        // Copy webroot to our deploy directory.
+        $this->taskRsync()
+            ->fromPath("./")
+            ->toPath("$tmpDir/deploy")
+            ->args('-a', '-v', '-z', '--no-group', '--no-owner')
+            ->excludeVcs()
+            ->exclude('sites/default/settings.local.php')
+            ->exclude('sites/default/files')
+            ->printOutput(FALSE)
+            ->run();
+    } else {
+        $this->taskRsync()
+            ->fromPath("./")
+            ->toPath("$tmpDir/deploy")
+            ->args('-a', '-v', '-z', '--no-group', '--no-owner')
+            ->excludeVcs()
+            ->exclude('.gitignore')
+            ->exclude('sites/default/settings.local.php')
+            ->exclude('sites/default/files')
+            ->printOutput(FALSE)
+            ->run();
+    }
 
     // Move host .git into our deployment directory.
     $this->taskRsync()
