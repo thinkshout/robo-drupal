@@ -264,17 +264,32 @@ class Tasks extends RoboTasks {
 
     $commit_message = "Combined commits: \n" . $commit_message;
 
-    // Copy webroot to our deploy directory.
-    $this->taskRsync()
-      ->fromPath("./")
-      ->toPath("$tmpDir/deploy")
-      ->args('-a', '-v', '-z', '--no-group', '--no-owner')
-      ->excludeVcs()
-      ->exclude('.gitignore')
-      ->exclude('sites/default/settings.local.php')
-      ->exclude('sites/default/files')
-      ->printOutput(FALSE)
-      ->run();
+    $build_on_pantheon = $this->buildOnPantheon();
+
+    if ($build_on_pantheon) {
+        // Copy webroot to our deploy directory, leaving the gitignore to be pushed.
+        $this->taskRsync()
+            ->fromPath("./")
+            ->toPath("$tmpDir/deploy")
+            ->args('-a', '-v', '-z', '--no-group', '--no-owner')
+            ->excludeVcs()
+            ->exclude('sites/default/settings.local.php')
+            ->exclude('sites/default/files')
+            ->printOutput(FALSE)
+            ->run();
+    } else {
+        // Copy webroot to our whole deploy directory, dropping the gititnore.
+        $this->taskRsync()
+            ->fromPath("./")
+            ->toPath("$tmpDir/deploy")
+            ->args('-a', '-v', '-z', '--no-group', '--no-owner')
+            ->excludeVcs()
+            ->exclude('.gitignore')
+            ->exclude('sites/default/settings.local.php')
+            ->exclude('sites/default/files')
+            ->printOutput(FALSE)
+            ->run();
+    }
 
     // Move host .git into our deployment directory.
     $this->taskRsync()
@@ -1139,4 +1154,33 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     return $result;
   }
+
+    /**
+     * Determine if we are building on Pantheon based on pantheon.upstream.yml or pantheon.yml file.
+     *
+     * @return bool
+     */
+    private function buildOnPantheon() {
+        // Read in contents of pantheon.upstream.yml file, fallback to pantheon.yml file.
+        $pantheon_yml_options = array(
+            'pantheon.yml' => 'pantheon.yml',
+            'pantheon.upstream.yml' => 'pantheon.upstream.yml',
+        );
+        foreach ($pantheon_yml_options as $filename) {
+            if(file_exists(getcwd() . DIRECTORY_SEPARATOR . $filename)) {
+                $this->stopOnFail(false);
+                $build_on_pantheon = $this->taskExec('drush yaml:get:value ' . $filename . ' build_step')
+                    ->printOutput(false)
+                    ->run();
+                $this->stopOnFail(true);
+                break;
+            }
+        }
+        if (!$build_on_pantheon->wasSuccessful()) {
+            $to_return = FALSE;
+        } else {
+            $to_return=($build_on_pantheon->getMessage()=='true');
+        }
+        return $to_return;
+    }
 }
