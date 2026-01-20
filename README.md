@@ -13,7 +13,7 @@ Once you have set a production branch, you can create a branch with that name fr
 # Installation
 1. In your projects' composer.json file, under "extra" -> "drupal-scaffold" -> "allowed-packages" add "thinkshout\/robo-drupal"
 2. Require robo-drupal for dev environments: `composer require --dev thinkshout/robo-drupal -W`
-4. If you don't have a `.env.dist` file in your project's root, run `robo init`.
+4. Update the values in `.env.dist` to match your site: `TERMINUS_SITE` (example: mysite), `TS_PROJECT` (example: mysite), and `DRUSH_OPTIONS_URI` (example: web.mysite.localhost)
 5. Run `robo configure`. This should create a `.env` file based on your `.env.dist` file. 
 6. Test out the configuration above by pulling down the live database:
 ```
