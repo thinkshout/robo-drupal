@@ -9,6 +9,7 @@ use Symfony\Component\Process\Process;
 
 class Tasks extends RoboTasks {
   private $projectProperties;
+  const DEFAULT_WORKFLOW_TIMEOUT = 180;
 
   /**
    * Whether or not the project uses migration plugins instead of config.
@@ -1182,5 +1183,69 @@ chmod 755 ' . $default_dir . '/settings.php';
             $to_return=($build_on_pantheon->getMessage()=='true');
         }
         return $to_return;
+    }
+
+    private function waitForWorkflow($startTime, $site, $env_name, $expectedWorkflowDescription = '', $maxWaitInSeconds = null, $maxNotFoundAttempts = null)
+    {
+        if (empty($expectedWorkflowDescription)) {
+            $expectedWorkflowDescription = "Sync code on $env_name";
+        }
+
+        if (null === $maxWaitInSeconds) {
+            $maxWaitInSecondsEnv = getenv('TERMINUS_BUILD_TOOLS_WORKFLOW_TIMEOUT');
+            $maxWaitInSeconds = $maxWaitInSecondsEnv ? $maxWaitInSecondsEnv : self::DEFAULT_WORKFLOW_TIMEOUT;
+        }
+
+        $startWaiting = time();
+        $firstWorkflowDescription = null;
+        $notFoundAttempts = 0;
+        $workflows = $site->getWorkflows();
+
+        while(true) {
+            $site = $this->getSiteById($site->id);
+            // Refresh env on each interation.
+            $index = 0;
+            $workflows->reset();
+            $workflow_items = $workflows->fetch(['paged' => false,])->all();
+            $found = false;
+            foreach ($workflow_items as $workflow) {
+                $workflowCreationTime = $workflow->get('created_at');
+
+                $workflowDescription = str_replace('"', '', $workflow->get('description'));
+                if ($index === 0) {
+                    $firstWorkflowDescription = $workflowDescription;
+                }
+                $index++;
+
+                if ($workflowCreationTime < $startTime) {
+                    // We already passed the start time.
+                    break;
+                }
+
+                if (($expectedWorkflowDescription === $workflowDescription)) {
+                    $workflow->fetch();
+                    $this->log()->notice("Workflow '{current}' {status}.", ['current' => $workflowDescription, 'status' => $workflow->getStatus(), ]);
+                    $found = true;
+                    if ($workflow->isSuccessful()) {
+                        $this->log()->notice("Workflow succeeded");
+                        return;
+                    }
+                }
+            }
+            if (!$found) {
+                $notFoundAttempts++;
+                $this->log()->notice("Current workflow is '{current}'; waiting for '{expected}'", ['current' => $firstWorkflowDescription, 'expected' => $expectedWorkflowDescription]);
+                if ($maxNotFoundAttempts && $notFoundAttempts === $maxNotFoundAttempts) {
+                    $this->log()->warning("Attempted '{max}' times, giving up waiting for workflow to be found", ['max' => $maxNotFoundAttempts]);
+                    break;
+                }
+            }
+            // Wait a bit, then spin some more
+            sleep(5);
+            if (time() - $startWaiting >= $maxWaitInSeconds) {
+                $this->log()->warning("Waited '{max}' seconds, giving up waiting for workflow to finish", ['max' => $maxWaitInSeconds]);
+                break;
+            }
+        }
     }
 }
