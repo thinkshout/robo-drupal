@@ -244,15 +244,23 @@ class Tasks extends RoboTasks {
     $this->taskCleanDir([$tmpDir])
       ->run();
 
-    $this->taskGitStack()
-      ->stopOnFail()
-      ->cloneRepo($repo, "$tmpDir/$hostDirName")
-      ->run();
+    if ($this->deployToAcquia()){
+        $this->taskGitStack()
+          ->stopOnFail()
+          ->cloneShallow($repo, "$tmpDir/$hostDirName", $pantheon_branch)
+          ->run();
+    }
+    else {
+      $this->taskGitStack()
+        ->stopOnFail()
+        ->cloneRepo($repo, "$tmpDir/$hostDirName")
+        ->run();
 
-    // Git checkout of the matching remote branch.
-    $this->taskGitStack()->dir("$tmpDir/$hostDirName")
-      ->checkout($pantheon_branch)
-      ->run();
+      // Git checkout of the matching remote branch.
+      $this->taskGitStack()->dir("$tmpDir/$hostDirName")
+        ->checkout($pantheon_branch)
+        ->run();
+    }
 
     // Get the last commit from the remote branch.
     $last_remote_commit = $this->taskExec('git --no-pager log -1 --date=short --pretty=format:%ci')
@@ -266,7 +274,7 @@ class Tasks extends RoboTasks {
 
     $build_on_pantheon = $this->buildOnPantheon();
 
-    if ($build_on_pantheon) {
+    if ($build_on_pantheon && !$this->deployToAcquia()) {
         // Copy webroot to our deploy directory, leaving the gitignore to be pushed.
         $this->taskRsync()
             ->fromPath("./")
@@ -524,6 +532,15 @@ class Tasks extends RoboTasks {
       $this->_exec("terminus env:wipe $terminus_site_env --yes");
       return $this->pantheonInstall();
     }
+  }
+
+  /**
+   * Prepare an Acquia multidev for this project/branch.
+   *
+   * @return bool
+   */
+  public function deployToAcquia() {
+    return FALSE;
   }
 
   /**
