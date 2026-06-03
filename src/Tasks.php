@@ -274,7 +274,7 @@ class Tasks extends RoboTasks {
 
     $build_on_pantheon = $this->buildOnPantheon();
 
-    if ($build_on_pantheon && !$this->deployToAcquia()) {
+    if ($build_on_pantheon) {
         // Copy webroot to our deploy directory, leaving the gitignore to be pushed.
         $this->taskRsync()
             ->fromPath("./")
