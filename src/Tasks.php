@@ -340,7 +340,7 @@ class Tasks extends RoboTasks {
    *
    * @return \Robo\Result
    */
-  protected function trueFreshInstall() {
+  public function trueFreshInstall() {
     // Use user environment settings if we have them.
     if ($system_defaults = getenv('PRESSFLOW_SETTINGS')) {
       $settings = json_decode($system_defaults, TRUE);
