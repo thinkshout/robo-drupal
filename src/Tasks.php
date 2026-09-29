@@ -319,15 +319,17 @@ class Tasks extends RoboTasks {
   /**
    * Install or re-install the Drupal site.
    *
+   * @option yes Automatically answer "yes" to prompts.
+   *
    * @return \Robo\Result
    */
-  public function install() {
+  public function install($opts = ['yes|y' => FALSE]) {
     if(getenv('CIRCLECI')) {
       // Do nothing custom here.
       return $this->trueFreshInstall();
     }
     elseif ($this->databaseSourceOfTruth()) {
-      $this->prepareLocal();
+      $this->prepareLocal(['yes' => $opts['yes']]);
     }
     else {
       $this->trueFreshInstall();
@@ -885,11 +887,13 @@ chmod 755 ' . $default_dir . '/settings.php';
    *
    * Pulls the database of truth, brings the database in line with local config,
    * and enables local development modules, including config suite.
+   *
+   * @option yes Automatically answer "yes" to prompts.
    */
-  public function prepareLocal() {
+  public function prepareLocal($opts = ['yes|y' => FALSE]) {
     $do_composer_install = TRUE;
     $project_properties = $this->getProjectProperties();
-    $grab_database = $this->confirm("Load a database backup?");
+    $grab_database = $opts['yes'] || $this->confirm("Load a database backup?");
     if ($grab_database == 'y') {
       $do_composer_install = $this->getDatabaseOfTruth();
     }
