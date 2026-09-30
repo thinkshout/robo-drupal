@@ -797,8 +797,7 @@ chmod 755 ' . $default_dir . '/settings.php';
       $drush_commands = [
         'drush_partial_config_import' => "terminus remote:drush $terminus_site_env -- config-import --partial -y",
         'drush_cache_clear' => "terminus remote:drush $terminus_site_env -- cr",
-        'drush_update_database' => "terminus remote:drush $terminus_site_env -- updb -y",
-        'drush_full_config_import' => "terminus remote:drush $terminus_site_env -- config-import -y",
+        'drush_deploy' => "terminus remote:drush $terminus_site_env -- deploy -y",
       ];
       // Run the installation.
       $result = $this->taskExec(implode(' && ', $drush_commands))
@@ -902,9 +901,7 @@ chmod 755 ' . $default_dir . '/settings.php';
         ->optimizeAutoloader()
         ->run();
       $drush_commands = [
-        'drush_clear_cache' => 'drush cr',
-        'drush_update_database' => 'drush updb -y',
-        'drush_grab_config_changes' => 'drush config-import -y',
+        'drush_deploy' => 'drush deploy -y',
       ];
       $config_splits = $this->getConfigSplits();
       foreach ($config_splits as $split) {
