@@ -319,17 +319,17 @@ class Tasks extends RoboTasks {
   /**
    * Install or re-install the Drupal site.
    *
-   * @option yes Automatically answer "yes" to prompts.
+   * @option database Database backup to load (i.e. local/develop/multidev/live). Skips prompts.
    *
    * @return \Robo\Result
    */
-  public function install($opts = ['yes|y' => FALSE]) {
+  public function install($opts = ['database|d' => NULL]) {
     if(getenv('CIRCLECI')) {
       // Do nothing custom here.
       return $this->trueFreshInstall();
     }
     elseif ($this->databaseSourceOfTruth()) {
-      $this->prepareLocal(['yes' => $opts['yes']]);
+      $this->prepareLocal(['database' => $opts['database']]);
     }
     else {
       $this->trueFreshInstall();
@@ -885,14 +885,13 @@ chmod 755 ' . $default_dir . '/settings.php';
    * Pulls the database of truth, brings the database in line with local config,
    * and enables local development modules, including config suite.
    *
-   * @option yes Automatically answer "yes" to prompts.
+   * @option database Database backup to load (i.e. local/develop/multidev/live). Skips prompts.
    */
-  public function prepareLocal($opts = ['yes|y' => FALSE]) {
+  public function prepareLocal($opts = ['database|d' => NULL]) {
     $do_composer_install = TRUE;
     $project_properties = $this->getProjectProperties();
-    $grab_database = $opts['yes'] || $this->confirm("Load a database backup?");
-    if ($grab_database == 'y') {
-      $do_composer_install = $this->getDatabaseOfTruth();
+    if ($opts['database'] || $this->confirm("Load a database backup?")) {
+      $do_composer_install = $this->getDatabaseOfTruth($opts['database']);
     }
     if ($do_composer_install) {
       $this->taskComposerInstall()
@@ -965,26 +964,32 @@ chmod 755 ' . $default_dir . '/settings.php';
   /**
    * Helper function to pull the database of truth to your local machine.
    *
+   * @param string|null $which_database
+   *   The backup to load (local or a Pantheon env). Prompts if empty.
+   *
    * @return bool
    *   If the remote database was reached and downloaded, return TRUE.
    */
-  protected function getDatabaseOfTruth() {
+  protected function getDatabaseOfTruth($which_database = NULL) {
     $project_properties = $this->getProjectProperties();
-    $default_database = $this->databaseSourceOfTruth();
 
-    if (file_exists('vendor/database.sql.gz')) {
-      $default_database = 'local';
+    if (!$which_database) {
+      $default_database = $this->databaseSourceOfTruth();
+
+      if (file_exists('vendor/database.sql.gz')) {
+        $default_database = 'local';
+      }
+
+      $this->say('This command will drop all tables in your local database and re-populate from a backup .sql.gz file.');
+      $this->say('If you already have a database backup in your  vendor folder, the "local" option will be available.');
+      $this->say('If you want to grab a more recent backup from Pantheon, type in the environment name (i.e. dev, test, live, my-multidev). This will be saved to your vendor folder for future re-installs.');
+      $this->say('Backups are generated on Pantheon regularly, but might be old.');
+      $this->say('If you need the very latest data from a Pantheon site, go create a new backup using either the Pantheon backend, or Terminus.');
+
+      $which_database = $this->askDefault(
+        'Which database backup should we load (i.e. local/develop/multidev/live)?', $default_database
+      );
     }
-
-    $this->say('This command will drop all tables in your local database and re-populate from a backup .sql.gz file.');
-    $this->say('If you already have a database backup in your  vendor folder, the "local" option will be available.');
-    $this->say('If you want to grab a more recent backup from Pantheon, type in the environment name (i.e. dev, test, live, my-multidev). This will be saved to your vendor folder for future re-installs.');
-    $this->say('Backups are generated on Pantheon regularly, but might be old.');
-    $this->say('If you need the very latest data from a Pantheon site, go create a new backup using either the Pantheon backend, or Terminus.');
-
-    $which_database = $this->askDefault(
-      'Which database backup should we load (i.e. local/develop/multidev/live)?', $default_database
-    );
 
     $getDB = TRUE;
     if ($which_database !== 'local') {
