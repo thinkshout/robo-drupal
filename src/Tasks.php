@@ -795,8 +795,6 @@ chmod 755 ' . $default_dir . '/settings.php';
     $pantheon_prefix   = getenv('TERMINUS_SITE');
     if ($terminus_site_env == $pantheon_prefix . '.develop' || $terminus_site_env == $pantheon_prefix . '.dev') {
       $drush_commands = [
-        'drush_partial_config_import' => "terminus remote:drush $terminus_site_env -- config-import --partial -y",
-        'drush_cache_clear' => "terminus remote:drush $terminus_site_env -- cr",
         'drush_deploy' => "terminus remote:drush $terminus_site_env -- deploy -y",
       ];
       // Run the installation.
