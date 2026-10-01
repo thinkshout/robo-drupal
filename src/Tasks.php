@@ -323,13 +323,13 @@ class Tasks extends RoboTasks {
    *
    * @return \Robo\Result
    */
-  public function install($opts = ['database|db' => NULL]) {
+  public function install($opts = ['db' => NULL]) {
     if(getenv('CIRCLECI')) {
       // Do nothing custom here.
       return $this->trueFreshInstall();
     }
     elseif ($this->databaseSourceOfTruth()) {
-      $this->prepareLocal(['database' => $opts['database']]);
+      $this->prepareLocal(['db' => $opts['db']]);
     }
     else {
       $this->trueFreshInstall();
@@ -887,11 +887,11 @@ chmod 755 ' . $default_dir . '/settings.php';
    *
    * @option database Database backup to load (i.e. local/develop/multidev/live). Skips prompts.
    */
-  public function prepareLocal($opts = ['database|db' => NULL]) {
+  public function prepareLocal($opts = ['db' => NULL]) {
     $do_composer_install = TRUE;
     $project_properties = $this->getProjectProperties();
-    if ($opts['database'] || $this->confirm("Load a database backup?")) {
-      $do_composer_install = $this->getDatabaseOfTruth($opts['database']);
+    if ($opts['db'] || $this->confirm("Load a database backup?")) {
+      $do_composer_install = $this->getDatabaseOfTruth($opts['db']);
     }
     if ($do_composer_install) {
       $this->taskComposerInstall()
