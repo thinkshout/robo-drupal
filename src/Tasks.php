@@ -338,6 +338,21 @@ class Tasks extends RoboTasks {
   }
 
   /**
+   * Authorize terminus, pull the database, then deauthorize terminus.
+   *
+   * @return \Robo\Result
+   */
+  public function saferInstall() {
+    $this->taskExec('terminus -n auth:login --machine-token="$TERMINUS_TOKEN"')->run();
+    try {
+      $this->install();
+    }
+    finally {
+      $this->taskExec('terminus -n auth:logout')->run();
+    }
+  }
+
+  /**
    * Install or re-install the Drupal site.
    *
    * @return \Robo\Result
