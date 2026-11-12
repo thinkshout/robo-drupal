@@ -244,15 +244,23 @@ class Tasks extends RoboTasks {
     $this->taskCleanDir([$tmpDir])
       ->run();
 
-    $this->taskGitStack()
-      ->stopOnFail()
-      ->cloneRepo($repo, "$tmpDir/$hostDirName")
-      ->run();
+    if ($this->deployToAcquia()){
+        $this->taskGitStack()
+          ->stopOnFail()
+          ->cloneShallow($repo, "$tmpDir/$hostDirName", $pantheon_branch)
+          ->run();
+    }
+    else {
+      $this->taskGitStack()
+        ->stopOnFail()
+        ->cloneRepo($repo, "$tmpDir/$hostDirName")
+        ->run();
 
-    // Git checkout of the matching remote branch.
-    $this->taskGitStack()->dir("$tmpDir/$hostDirName")
-      ->checkout($pantheon_branch)
-      ->run();
+      // Git checkout of the matching remote branch.
+      $this->taskGitStack()->dir("$tmpDir/$hostDirName")
+        ->checkout($pantheon_branch)
+        ->run();
+    }
 
     // Get the last commit from the remote branch.
     $last_remote_commit = $this->taskExec('git --no-pager log -1 --date=short --pretty=format:%ci')
@@ -541,6 +549,15 @@ class Tasks extends RoboTasks {
       $this->_exec("terminus env:wipe $terminus_site_env --yes");
       return $this->pantheonInstall();
     }
+  }
+
+  /**
+   * Prepare an Acquia multidev for this project/branch.
+   *
+   * @return bool
+   */
+  public function deployToAcquia() {
+    return FALSE;
   }
 
   /**
@@ -1008,7 +1025,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     $getDB = TRUE;
     if ($which_database !== 'local') {
-      $getDB = $this->downloadPantheonBackup($which_database);
+      $getDB = $this->downloadBackup($which_database);
     }
 
     if ($getDB) {
@@ -1017,9 +1034,24 @@ chmod 755 ' . $default_dir . '/settings.php';
       return $this->importLocal();
     }
     else {
-      $this->yell('Failed to download a Pantheon backup. Database was not refreshed.');
+      $this->yell('Failed to download a database backup. Database was not refreshed.');
       return false;
     }
+  }
+
+  /**
+   * Downloads a backup of $env to vendor/database.sql.gz.
+   *
+   * Override to pull some environments from another host.
+   *
+   * @param string $env
+   *   The environment to get the backup from.
+   *
+   * @return bool
+   *   True if the backup was downloaded.
+   */
+  protected function downloadBackup($env) {
+    return $this->downloadPantheonBackup($env);
   }
 
   /**
@@ -1031,7 +1063,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    * @return bool
    *   True if the backup was downloaded.
    */
-  private function downloadPantheonBackup($env) {
+  protected function downloadPantheonBackup($env) {
     $project_properties = $this->getProjectProperties();
     $terminus_site_env  = $this->getPantheonSiteEnv($env);
 
