@@ -1012,11 +1012,7 @@ chmod 755 ' . $default_dir . '/settings.php';
     if ($getDB) {
       $this->say('Emptying existing database.');
       $this->taskExec('drush sql:create -y')->dir($project_properties['web_root'])->run();
-      if (!$this->importLocal()) {
-        return FALSE;
-      }
-      $this->postImport($which_database);
-      return TRUE;
+      return $this->importLocal();
     }
     else {
       $this->yell('Failed to download a database backup. Database was not refreshed.');
@@ -1037,15 +1033,6 @@ chmod 755 ' . $default_dir . '/settings.php';
    */
   protected function downloadBackup($env) {
     return $this->downloadPantheonBackup($env);
-  }
-
-  /**
-   * Runs after a backup is imported locally during install.
-   *
-   * @param string $env
-   *   The environment the backup came from, or "local".
-   */
-  protected function postImport($env) {
   }
 
   /**
