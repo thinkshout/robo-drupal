@@ -1006,7 +1006,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     $getDB = TRUE;
     if ($which_database !== 'local') {
-      $getDB = $this->downloadPantheonBackup($which_database);
+      $getDB = $this->downloadBackup($which_database);
     }
 
     if ($getDB) {
@@ -1015,9 +1015,24 @@ chmod 755 ' . $default_dir . '/settings.php';
       return $this->importLocal();
     }
     else {
-      $this->yell('Failed to download a Pantheon backup. Database was not refreshed.');
+      $this->yell('Failed to download a database backup. Database was not refreshed.');
       return false;
     }
+  }
+
+  /**
+   * Downloads a backup of $env to vendor/database.sql.gz.
+   *
+   * Override to pull some environments from another host.
+   *
+   * @param string $env
+   *   The environment to get the backup from.
+   *
+   * @return bool
+   *   True if the backup was downloaded.
+   */
+  protected function downloadBackup($env) {
+    return $this->downloadPantheonBackup($env);
   }
 
   /**
@@ -1029,7 +1044,7 @@ chmod 755 ' . $default_dir . '/settings.php';
    * @return bool
    *   True if the backup was downloaded.
    */
-  private function downloadPantheonBackup($env) {
+  protected function downloadPantheonBackup($env) {
     $project_properties = $this->getProjectProperties();
     $terminus_site_env  = $this->getPantheonSiteEnv($env);
 
