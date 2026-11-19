@@ -876,7 +876,7 @@ chmod 755 ' . $default_dir . '/settings.php';
 
     $grab_database = $this->confirm("Create a new backup now?");
     if ($grab_database == 'y') {
-      $terminus_url_request = $this->taskExec('terminus backup:create ' . $terminus_site_env . ' --element="db"')
+      $terminus_url_request = $this->taskExec('terminus backup:create ' . $terminus_site_env . ' --element="db" --keep-for=90')
         ->dir($project_properties['web_root'])
         ->interactive(false)
         ->run();
